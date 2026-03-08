@@ -69,6 +69,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        fintech: {
+          "risk-low": "hsl(var(--risk-low))",
+          "risk-moderate": "hsl(var(--risk-moderate))",
+          "risk-elevated": "hsl(var(--risk-elevated))",
+          "risk-high": "hsl(var(--risk-high))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

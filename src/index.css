@@ -6,51 +6,61 @@
 
 @layer base {
   :root {
-    --background: 216 50% 10%;
+    /* Enterprise FinTech Deep Slate Theme */
+    --background: 223 50% 11%; /* Deep slate #131722 */
     --foreground: 210 33% 96%;
 
-    --card: 214 60% 15%;
+    --card: 223 38% 17%; /* Slightly lighter slate #2A2E39 */
     --card-foreground: 210 33% 96%;
 
-    --popover: 214 60% 15%;
+    --popover: 223 38% 17%;
     --popover-foreground: 210 33% 96%;
 
     --primary: 224 76% 53%;
     --primary-foreground: 210 33% 98%;
 
-    --secondary: 213 50% 20%;
+    --secondary: 223 30% 20%;
     --secondary-foreground: 210 33% 96%;
 
-    --muted: 213 40% 18%;
-    --muted-foreground: 209 22% 62%;
+    --muted: 223 30% 18%;
+    --muted-foreground: 210 20% 65%;
 
     --accent: 199 89% 60%;
-    --accent-foreground: 216 50% 10%;
+    --accent-foreground: 223 50% 11%;
 
-    --destructive: 0 72% 51%;
+    /* FinTech specific colors */
+    --destructive: 0 65% 69%; /* Soft red #F87171 */
     --destructive-foreground: 210 33% 98%;
 
-    --border: 213 50% 24%;
-    --input: 213 50% 24%;
+    --success: 142 69% 58%; /* Soft green #4ADE80 */
+    --success-foreground: 223 50% 11%;
+
+    --border: 223 30% 24%;
+    --input: 223 30% 24%;
     --ring: 224 76% 53%;
 
     --radius: 0.5rem;
 
-    --success: 142 72% 37%;
-    --success-foreground: 210 33% 98%;
     --warning: 32 95% 44%;
-    --warning-foreground: 216 50% 10%;
+    --warning-foreground: 223 50% 11%;
 
-    --sidebar-background: 216 55% 8%;
+    /* Enhanced sidebar for enterprise */
+    --sidebar-background: 223 60% 9%; /* Even deeper slate */
     --sidebar-foreground: 210 33% 96%;
     --sidebar-primary: 224 76% 53%;
     --sidebar-primary-foreground: 210 33% 98%;
-    --sidebar-accent: 213 50% 15%;
+    --sidebar-accent: 223 38% 15%;
     --sidebar-accent-foreground: 210 33% 96%;
-    --sidebar-border: 213 50% 20%;
+    --sidebar-border: 223 30% 20%;
     --sidebar-ring: 224 76% 53%;
 
     --chart-accent: 199 89% 60%;
+
+    /* Risk level colors */
+    --risk-low: 142 69% 58%; /* Soft green */
+    --risk-moderate: 32 95% 44%; /* Amber */
+    --risk-elevated: 24 100% 50%; /* Orange */
+    --risk-high: 0 65% 69%; /* Soft red */
   }
 }
 

@@ -16,9 +16,10 @@ import {
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "All Applications", url: "/history", icon: History },
   { title: "New Assessment", url: "/assess", icon: FilePlus },
   { title: "Batch Upload", url: "/batch", icon: Upload },
-  { title: "History", url: "/history", icon: History },
+  { title: "Settings", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {

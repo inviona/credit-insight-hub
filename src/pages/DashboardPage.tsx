@@ -12,17 +12,49 @@ import { ChartModal } from "@/components/ChartModal";
 import { fetchCurrentInterestRates, generateHistoricalRates, InterestRateData } from "@/lib/interest-rate-api";
 import { useNavigate } from "react-router-dom";
 
+const COLORS = ['#4ADE80', '#3B82F6', '#F59E0B', '#EF4444'];
+
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const history = useMemo(() => generateMockHistory(20), []);
   const dailyStats = useMemo(() => generateDailyStats(30), []);
+  const historicalRates = useMemo(() => generateHistoricalRates(12), []);
+
+  const [currentRates, setCurrentRates] = useState<InterestRateData | null>(null);
+  const [selectedChart, setSelectedChart] = useState<{
+    title: string;
+    description: string;
+    analysis: string;
+    chart: React.ReactNode;
+    trend?: "up" | "down" | "stable";
+  } | null>(null);
+
+  useEffect(() => {
+    fetchCurrentInterestRates().then(setCurrentRates);
+  }, []);
 
   const totalAssessments = history.length;
   const approvedCount = history.filter((h) => h.decision === "APPROVED").length;
   const approvalRate = totalAssessments ? Math.round((approvedCount / totalAssessments) * 100) : 0;
-  const avgRisk = totalAssessments
-    ? Math.round((history.reduce((s, h) => s + h.adj_probability, 0) / totalAssessments) * 100)
-    : 0;
+  const portfolioValue = 10.4; // $10.4M
+  const expectedLoss = 2.15; // 2.15%
   const highRiskCount = history.filter((h) => h.decision === "REJECTED").length;
+
+  // Portfolio quality breakdown
+  const portfolioQuality = [
+    { name: "Excellent (Prime+)", value: 3.5, color: COLORS[0] },
+    { name: "Good (Prime)", value: 4.2, color: COLORS[1] },
+    { name: "Fair (Near-Prime)", value: 2.1, color: COLORS[2] },
+    { name: "Subprime", value: 0.6, color: COLORS[3] },
+  ];
+
+  // Delinquency pipeline data
+  const delinquencyData = [
+    { period: "Current", value: 13.6 },
+    { period: "30 Days Late", value: 12.5 },
+    { period: "60 Days Late", value: 8.8 },
+    { period: "90+ Days Late", value: 0.9 },
+  ];
 
   return (
     <DashboardLayout>

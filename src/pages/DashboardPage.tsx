@@ -1,6 +1,6 @@
-import { useMemo } from "react";
-import { BarChart3, CheckCircle2, AlertTriangle, Activity } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { useMemo, useState, useEffect } from "react";
+import { BarChart3, CheckCircle2, AlertTriangle, Activity, TrendingUp, DollarSign, PieChart as PieChartIcon } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { KpiCard } from "@/components/KpiCard";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { generateMockHistory, generateDailyStats } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { ChartModal } from "@/components/ChartModal";
+import { fetchCurrentInterestRates, generateHistoricalRates, InterestRateData } from "@/lib/interest-rate-api";
+import { useNavigate } from "react-router-dom";
 
 export default function DashboardPage() {
   const history = useMemo(() => generateMockHistory(20), []);

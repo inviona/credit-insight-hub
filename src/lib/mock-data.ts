@@ -59,7 +59,7 @@ export function generateMockHistory(count = 25): HistoryRecord[] {
       age_years: Math.round(22 + Math.random() * 43),
       raw_probability: Math.round(rawProb * 10000) / 10000,
       adj_probability: Math.round(adjProb * 10000) / 10000,
-      decision: (isApproved ? "APPROVED" : "REJECTED") as const,
+      decision: isApproved ? ("APPROVED" as const) : ("REJECTED" as const),
       risk_level: riskLevels[riskIdx],
       business_notes: isApproved
         ? ["Comfortable monthly DTI (18%) → −5% risk", "Owns property (collateral signal) → −3% risk"]

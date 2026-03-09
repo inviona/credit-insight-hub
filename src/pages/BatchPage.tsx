@@ -215,6 +215,57 @@ export default function BatchPage() {
           </CardContent>
         </Card>
 
+        {/* Results table */}
+        {status === "done" && results.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Prediction Results</CardTitle>
+              <CardDescription>{results.length} applications processed</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Applicant</TableHead>
+                      <TableHead>Income</TableHead>
+                      <TableHead>Credit</TableHead>
+                      <TableHead>Risk Score</TableHead>
+                      <TableHead>Decision</TableHead>
+                      <TableHead>Confidence</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {results.map((result, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium">
+                          {result.applicant_name || `Applicant ${idx + 1}`}
+                        </TableCell>
+                        <TableCell>${result.amt_income_total.toLocaleString()}</TableCell>
+                        <TableCell>${result.amt_credit.toLocaleString()}</TableCell>
+                        <TableCell>{result.default_risk_score.toFixed(2)}%</TableCell>
+                        <TableCell>
+                          <span className={cn(
+                            "inline-flex px-2 py-1 rounded-full text-xs font-medium",
+                            result.prediction_result.toLowerCase() === "approved" 
+                              ? "bg-success/10 text-success" 
+                              : "bg-destructive/10 text-destructive"
+                          )}>
+                            {result.prediction_result}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {result.confidence_level ? `${result.confidence_level.toFixed(1)}%` : "N/A"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Sample format */}
         <Card>
           <CardHeader className="pb-2">
@@ -223,9 +274,9 @@ export default function BatchPage() {
           </CardHeader>
           <CardContent>
             <pre className="text-xs font-mono-numbers bg-muted/50 p-3 rounded-lg overflow-x-auto text-muted-foreground">
-{`AMT_INCOME_TOTAL,AMT_CREDIT,AMT_ANNUITY,AGE_YEARS,YEARS_EMPLOYED,CODE_GENDER,EXT_SOURCE_1,EXT_SOURCE_2,EXT_SOURCE_3
-75000,250000,1500,35,8,M,720,680,72
-45000,180000,1200,28,3,F,650,620,58`}
+{`applicant_name,AMT_INCOME_TOTAL,AMT_CREDIT,AMT_ANNUITY,AGE_YEARS,YEARS_EMPLOYED,CODE_GENDER,EXT_SOURCE_1,EXT_SOURCE_2,EXT_SOURCE_3
+John Doe,75000,250000,1500,35,8,M,720,680,72
+Jane Smith,45000,180000,1200,28,3,F,650,620,58`}
             </pre>
           </CardContent>
         </Card>

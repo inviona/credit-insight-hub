@@ -96,44 +96,48 @@ serve(async (req) => {
       );
     }
 
-    const predictions = rows.map((r) => {
-      const id = parseNumber(r.ID);
-      const amt_income_total = parseNumber(r.AMT_INCOME_TOTAL) ?? 0;
-      const amt_credit = parseNumber(r.AMT_CREDIT) ?? 0;
-      const amt_annuity = parseNumber(r.AMT_ANNUITY) ?? 0;
+    // Prepare applicants for Python API call
+    const applicants = rows.map((r) => ({
+      ID: parseNumber(r.ID),
+      AMT_INCOME_TOTAL: parseNumber(r.AMT_INCOME_TOTAL) ?? 0,
+      AMT_CREDIT: parseNumber(r.AMT_CREDIT) ?? 0,
+      AMT_ANNUITY: parseNumber(r.AMT_ANNUITY) ?? 0,
+      AGE_YEARS: parseNumber(r.AGE_YEARS),
+      YEARS_EMPLOYED: parseNumber(r.YEARS_EMPLOYED),
+      CODE_GENDER: (r.CODE_GENDER ?? "").trim() || null,
+      EXT_SOURCE_1: parseNumber(r.EXT_SOURCE_1),
+      EXT_SOURCE_2: parseNumber(r.EXT_SOURCE_2),
+      EXT_SOURCE_3: parseNumber(r.EXT_SOURCE_3),
+    }));
 
-      const age_years = parseNumber(r.AGE_YEARS);
-      const years_employed = parseNumber(r.YEARS_EMPLOYED);
-      const code_gender = (r.CODE_GENDER ?? "").trim() || null;
+    // Call external Python XGBoost API
+    const apiResults = await callPredictionAPI(applicants);
 
-      const ext_source_1 = parseNumber(r.EXT_SOURCE_1);
-      const ext_source_2 = parseNumber(r.EXT_SOURCE_2);
-      const ext_source_3 = parseNumber(r.EXT_SOURCE_3);
-
-      const { scorePct, confidence } = computeRiskScore({
-        amt_income_total,
-        amt_credit,
-        amt_annuity,
-        age_years,
-        years_employed,
-        ext_source_1,
-        ext_source_2,
-        ext_source_3,
-      });
-
-      const prediction_result = scorePct >= 50 ? "Rejected" : "Approved";
+    // Map API results to database format
+    const predictions = applicants.map((app, idx) => {
+      const apiResult = apiResults[idx];
+      
+      // Convert API response to our format
+      const scorePct = (apiResult.risk_probability ?? 0) * 100;
+      const prediction_result = apiResult.decision === "DEFAULT" ? "Rejected" : "Approved";
+      
+      // Estimate confidence from risk tier
+      let confidence = 85;
+      if (apiResult.risk_tier === "VERY LOW" || apiResult.risk_tier === "HIGH") confidence = 95;
+      else if (apiResult.risk_tier === "LOW" || apiResult.risk_tier === "ELEVATED") confidence = 80;
+      else confidence = 70;
 
       return {
-        id: id ?? null,
-        amt_income_total,
-        amt_credit,
-        amt_annuity,
-        age_years,
-        years_employed,
-        code_gender,
-        ext_source_1,
-        ext_source_2,
-        ext_source_3,
+        id: app.ID,
+        amt_income_total: app.AMT_INCOME_TOTAL,
+        amt_credit: app.AMT_CREDIT,
+        amt_annuity: app.AMT_ANNUITY,
+        age_years: app.AGE_YEARS,
+        years_employed: app.YEARS_EMPLOYED,
+        code_gender: app.CODE_GENDER,
+        ext_source_1: app.EXT_SOURCE_1,
+        ext_source_2: app.EXT_SOURCE_2,
+        ext_source_3: app.EXT_SOURCE_3,
         default_risk_score: scorePct,
         confidence_level: confidence,
         prediction_result,

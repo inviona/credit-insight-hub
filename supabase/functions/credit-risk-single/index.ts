@@ -43,13 +43,33 @@ interface PythonAPIResponse {
 }
 
 async function callPredictionAPI(applicant: PredictionRequest): Promise<PythonAPIResponse> {
-  const PREDICTION_API_URL = Deno.env.get("PREDICTION_API_URL");
-  
-  if (!PREDICTION_API_URL) {
-    throw new Error("PREDICTION_API_URL not configured. Please set this secret to your deployed Python API URL.");
+  const rawBase = Deno.env.get("PREDICTION_API_URL")?.trim();
+
+  if (!rawBase) {
+    throw new Error(
+      "PREDICTION_API_URL not configured. Please set this secret to your deployed Python API base URL (e.g. https://your-app.onrender.com)."
+    );
   }
 
-  const response = await fetch(`${PREDICTION_API_URL}/predict`, {
+  if (rawBase === "PREDICTION_API_URL") {
+    throw new Error(
+      "PREDICTION_API_URL is set to a placeholder value; please update it to a real URL (e.g. https://your-app.onrender.com)."
+    );
+  }
+
+  // Be forgiving if user pastes a hostname without scheme
+  const normalizedBase = /^https?:\/\//i.test(rawBase) ? rawBase : `https://${rawBase}`;
+
+  let endpoint: string;
+  try {
+    endpoint = new URL("/predict", normalizedBase).toString();
+  } catch {
+    throw new Error(
+      "PREDICTION_API_URL is not a valid URL; it must include a valid host and (optionally) a scheme like https://."
+    );
+  }
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ ...applicant, threshold: 0.5 }),

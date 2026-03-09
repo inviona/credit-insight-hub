@@ -12,9 +12,16 @@ interface KpiCardProps {
   onClick?: () => void;
 }
 
-export function KpiCard({ title, value, subtitle, icon: Icon, trend, className }: KpiCardProps) {
+export function KpiCard({ title, value, subtitle, icon: Icon, trend, className, onClick }: KpiCardProps) {
   return (
-    <Card className={cn("border-border/50", className)}>
+    <Card 
+      className={cn(
+        "border-border/50 transition-all", 
+        onClick && "cursor-pointer hover:border-primary/50 hover:shadow-lg",
+        className
+      )}
+      onClick={onClick}
+    >
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-1">

@@ -246,7 +246,7 @@ def health():
 
 
 @app.post("/predict")
-def predict(applicant: Applicant, threshold: float = 0.5):
+def predict(applicant: Applicant, threshold: float = 0.5, include_shap: bool = True):
     try:
         data = applicant.model_dump(exclude_none=True)
         # Convert AGE_YEARS/YEARS_EMPLOYED to DAYS_BIRTH/DAYS_EMPLOYED if needed
@@ -254,7 +254,7 @@ def predict(applicant: Applicant, threshold: float = 0.5):
             data["DAYS_BIRTH"] = -data["AGE_YEARS"] * 365.25
         if "YEARS_EMPLOYED" in data and "DAYS_EMPLOYED" not in data:
             data["DAYS_EMPLOYED"] = -data["YEARS_EMPLOYED"] * 365.25
-        return predict_single(data, threshold)
+        return predict_single(data, threshold, include_shap)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

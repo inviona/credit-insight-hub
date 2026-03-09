@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { HelpCircle, Loader2 } from "lucide-react";
 import { FORM_SECTIONS, calcAnnuity } from "@/lib/feature-config";
 import { generateMockPrediction, type PredictionResult } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AssessmentPage() {
   const [formData, setFormData] = useState<Record<string, string>>({});

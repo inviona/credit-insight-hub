@@ -36,44 +36,25 @@ function parseCsvSimple(text: string): Record<string, string>[] {
   });
 }
 
-function computeRiskScore(row: {
-  amt_income_total: number;
-  amt_credit: number;
-  amt_annuity: number;
-  age_years: number | null;
-  years_employed: number | null;
-  ext_source_1: number | null;
-  ext_source_2: number | null;
-  ext_source_3: number | null;
-}) {
-  const income = row.amt_income_total;
-  const credit = row.amt_credit;
-  const annuity = row.amt_annuity;
+async function callPredictionAPI(applicants: any[]): Promise<any[]> {
+  const PREDICTION_API_URL = Deno.env.get("PREDICTION_API_URL");
+  
+  if (!PREDICTION_API_URL) {
+    throw new Error("PREDICTION_API_URL not configured. Please set this secret to your deployed Python API URL.");
+  }
 
-  const ratio = credit / (income + 1);
-  const annuityRatio = annuity / (income + 1);
+  const response = await fetch(`${PREDICTION_API_URL}/predict/batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ applicants, threshold: 0.5 }),
+  });
 
-  const extVals = [row.ext_source_1, row.ext_source_2, row.ext_source_3].filter(
-    (v): v is number => typeof v === "number" && Number.isFinite(v),
-  );
-  const extAvg = extVals.length ? extVals.reduce((a, b) => a + b, 0) / extVals.length : 650;
-  const extNorm = clamp(extAvg / 1000, 0, 1);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Python API error [${response.status}]: ${errorText}`);
+  }
 
-  const age = row.age_years ?? 40;
-  const yearsEmp = row.years_employed ?? 5;
-
-  // Heuristic score (replace with your trained model later if you have an API/model artifact)
-  const raw =
-    1.25 * ratio +
-    0.9 * annuityRatio -
-    2.1 * extNorm +
-    0.012 * (60 - age) -
-    0.015 * yearsEmp;
-
-  const scorePct = clamp(sigmoid(raw) * 100, 0, 100);
-  const confidence = clamp(Math.abs(scorePct - 50) * 1.8, 5, 99);
-
-  return { scorePct, confidence };
+  return await response.json();
 }
 
 serve(async (req) => {

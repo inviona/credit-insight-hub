@@ -1,6 +1,6 @@
 // Lovable Cloud backend function: credit-risk-batch
-// Accepts CSV text with header:
-// ID,AMT_INCOME_TOTAL,AMT_CREDIT,AMT_ANNUITY,AGE_YEARS,YEARS_EMPLOYED,CODE_GENDER,EXT_SOURCE_1,EXT_SOURCE_2,EXT_SOURCE_3
+// Accepts CSV text and proxies to external Python XGBoost API
+// Expects PREDICTION_API_URL environment variable
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 

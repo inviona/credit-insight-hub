@@ -1,6 +1,6 @@
 // Lovable Cloud backend function: credit-risk-batch
-// Accepts CSV text with header:
-// ID,AMT_INCOME_TOTAL,AMT_CREDIT,AMT_ANNUITY,AGE_YEARS,YEARS_EMPLOYED,CODE_GENDER,EXT_SOURCE_1,EXT_SOURCE_2,EXT_SOURCE_3
+// Accepts CSV text and proxies to external Python XGBoost API
+// Expects PREDICTION_API_URL environment variable
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
@@ -16,14 +16,6 @@ function parseNumber(v: unknown): number | null {
   if (!s) return null;
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
-}
-
-function clamp(n: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, n));
-}
-
-function sigmoid(x: number) {
-  return 1 / (1 + Math.exp(-x));
 }
 
 function parseCsvSimple(text: string): Record<string, string>[] {
@@ -44,44 +36,25 @@ function parseCsvSimple(text: string): Record<string, string>[] {
   });
 }
 
-function computeRiskScore(row: {
-  amt_income_total: number;
-  amt_credit: number;
-  amt_annuity: number;
-  age_years: number | null;
-  years_employed: number | null;
-  ext_source_1: number | null;
-  ext_source_2: number | null;
-  ext_source_3: number | null;
-}) {
-  const income = row.amt_income_total;
-  const credit = row.amt_credit;
-  const annuity = row.amt_annuity;
+async function callPredictionAPI(applicants: any[]): Promise<any[]> {
+  const PREDICTION_API_URL = Deno.env.get("PREDICTION_API_URL");
+  
+  if (!PREDICTION_API_URL) {
+    throw new Error("PREDICTION_API_URL not configured. Please set this secret to your deployed Python API URL.");
+  }
 
-  const ratio = credit / (income + 1);
-  const annuityRatio = annuity / (income + 1);
+  const response = await fetch(`${PREDICTION_API_URL}/predict/batch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ applicants, threshold: 0.5 }),
+  });
 
-  const extVals = [row.ext_source_1, row.ext_source_2, row.ext_source_3].filter(
-    (v): v is number => typeof v === "number" && Number.isFinite(v),
-  );
-  const extAvg = extVals.length ? extVals.reduce((a, b) => a + b, 0) / extVals.length : 650;
-  const extNorm = clamp(extAvg / 1000, 0, 1);
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Python API error [${response.status}]: ${errorText}`);
+  }
 
-  const age = row.age_years ?? 40;
-  const yearsEmp = row.years_employed ?? 5;
-
-  // Heuristic score (replace with your trained model later if you have an API/model artifact)
-  const raw =
-    1.25 * ratio +
-    0.9 * annuityRatio -
-    2.1 * extNorm +
-    0.012 * (60 - age) -
-    0.015 * yearsEmp;
-
-  const scorePct = clamp(sigmoid(raw) * 100, 0, 100);
-  const confidence = clamp(Math.abs(scorePct - 50) * 1.8, 5, 99);
-
-  return { scorePct, confidence };
+  return await response.json();
 }
 
 serve(async (req) => {
@@ -123,44 +96,48 @@ serve(async (req) => {
       );
     }
 
-    const predictions = rows.map((r) => {
-      const id = parseNumber(r.ID);
-      const amt_income_total = parseNumber(r.AMT_INCOME_TOTAL) ?? 0;
-      const amt_credit = parseNumber(r.AMT_CREDIT) ?? 0;
-      const amt_annuity = parseNumber(r.AMT_ANNUITY) ?? 0;
+    // Prepare applicants for Python API call
+    const applicants = rows.map((r) => ({
+      ID: parseNumber(r.ID),
+      AMT_INCOME_TOTAL: parseNumber(r.AMT_INCOME_TOTAL) ?? 0,
+      AMT_CREDIT: parseNumber(r.AMT_CREDIT) ?? 0,
+      AMT_ANNUITY: parseNumber(r.AMT_ANNUITY) ?? 0,
+      AGE_YEARS: parseNumber(r.AGE_YEARS),
+      YEARS_EMPLOYED: parseNumber(r.YEARS_EMPLOYED),
+      CODE_GENDER: (r.CODE_GENDER ?? "").trim() || null,
+      EXT_SOURCE_1: parseNumber(r.EXT_SOURCE_1),
+      EXT_SOURCE_2: parseNumber(r.EXT_SOURCE_2),
+      EXT_SOURCE_3: parseNumber(r.EXT_SOURCE_3),
+    }));
 
-      const age_years = parseNumber(r.AGE_YEARS);
-      const years_employed = parseNumber(r.YEARS_EMPLOYED);
-      const code_gender = (r.CODE_GENDER ?? "").trim() || null;
+    // Call external Python XGBoost API
+    const apiResults = await callPredictionAPI(applicants);
 
-      const ext_source_1 = parseNumber(r.EXT_SOURCE_1);
-      const ext_source_2 = parseNumber(r.EXT_SOURCE_2);
-      const ext_source_3 = parseNumber(r.EXT_SOURCE_3);
-
-      const { scorePct, confidence } = computeRiskScore({
-        amt_income_total,
-        amt_credit,
-        amt_annuity,
-        age_years,
-        years_employed,
-        ext_source_1,
-        ext_source_2,
-        ext_source_3,
-      });
-
-      const prediction_result = scorePct >= 50 ? "Rejected" : "Approved";
+    // Map API results to database format
+    const predictions = applicants.map((app, idx) => {
+      const apiResult = apiResults[idx];
+      
+      // Convert API response to our format
+      const scorePct = (apiResult.risk_probability ?? 0) * 100;
+      const prediction_result = apiResult.decision === "DEFAULT" ? "Rejected" : "Approved";
+      
+      // Estimate confidence from risk tier
+      let confidence = 85;
+      if (apiResult.risk_tier === "VERY LOW" || apiResult.risk_tier === "HIGH") confidence = 95;
+      else if (apiResult.risk_tier === "LOW" || apiResult.risk_tier === "ELEVATED") confidence = 80;
+      else confidence = 70;
 
       return {
-        id: id ?? null,
-        amt_income_total,
-        amt_credit,
-        amt_annuity,
-        age_years,
-        years_employed,
-        code_gender,
-        ext_source_1,
-        ext_source_2,
-        ext_source_3,
+        id: app.ID,
+        amt_income_total: app.AMT_INCOME_TOTAL,
+        amt_credit: app.AMT_CREDIT,
+        amt_annuity: app.AMT_ANNUITY,
+        age_years: app.AGE_YEARS,
+        years_employed: app.YEARS_EMPLOYED,
+        code_gender: app.CODE_GENDER,
+        ext_source_1: app.EXT_SOURCE_1,
+        ext_source_2: app.EXT_SOURCE_2,
+        ext_source_3: app.EXT_SOURCE_3,
         default_risk_score: scorePct,
         confidence_level: confidence,
         prediction_result,

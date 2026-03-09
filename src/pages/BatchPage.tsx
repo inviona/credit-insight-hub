@@ -12,33 +12,138 @@ import Papa from "papaparse";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+type PredictionResult = {
+  applicant_name?: string;
+  amt_income_total: number;
+  amt_credit: number;
+  amt_annuity: number;
+  age_years?: number;
+  years_employed?: number;
+  code_gender?: string;
+  ext_source_1?: number;
+  ext_source_2?: number;
+  ext_source_3?: number;
+  default_risk_score: number;
+  prediction_result: string;
+  confidence_level?: number;
+};
+
 export default function BatchPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [status, setStatus] = useState<"idle" | "uploading" | "done">("idle");
+  const [status, setStatus] = useState<"idle" | "processing" | "done" | "error">("idle");
   const [progress, setProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [results, setResults] = useState<PredictionResult[]>([]);
+  const [errorMsg, setErrorMsg] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (f: File) => {
+    if (!f.name.endsWith('.csv')) {
+      toast({ title: "Invalid file", description: "Please upload a CSV file", variant: "destructive" });
+      return;
+    }
     setFile(f);
     setStatus("idle");
     setProgress(0);
+    setResults([]);
+    setErrorMsg("");
   };
 
-  const handleUpload = () => {
+  const handleProcess = async () => {
     if (!file) return;
-    setStatus("uploading");
-    // Simulate progress
-    let p = 0;
-    const interval = setInterval(() => {
-      p += Math.random() * 15 + 5;
-      if (p >= 100) {
-        p = 100;
-        clearInterval(interval);
-        setStatus("done");
+    
+    setStatus("processing");
+    setProgress(10);
+    setErrorMsg("");
+
+    try {
+      // Step 1: Send to Flask backend for prediction (30% progress)
+      const response = await submitBatch(file);
+      setProgress(40);
+
+      if (!response.ok) {
+        throw new Error("Prediction failed");
       }
-      setProgress(Math.min(100, Math.round(p)));
-    }, 300);
+
+      // Step 2: Parse the response - expecting JSON array of predictions
+      const predictions = await response.json();
+      setProgress(60);
+
+      if (!Array.isArray(predictions) || predictions.length === 0) {
+        throw new Error("No predictions returned from model");
+      }
+
+      // Step 3: Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("You must be logged in to save batch predictions");
+      }
+
+      // Step 4: Generate batch ID
+      const batchId = crypto.randomUUID();
+      setProgress(70);
+
+      // Step 5: Save all predictions to database
+      const applicationsToInsert = predictions.map((pred: any) => ({
+        user_id: user.id,
+        batch_id: batchId,
+        is_batch_upload: true,
+        applicant_name: pred.applicant_name || null,
+        amt_income_total: parseFloat(pred.amt_income_total),
+        amt_credit: parseFloat(pred.amt_credit),
+        amt_annuity: parseFloat(pred.amt_annuity),
+        age_years: pred.age_years ? parseFloat(pred.age_years) : null,
+        years_employed: pred.years_employed ? parseFloat(pred.years_employed) : null,
+        code_gender: pred.code_gender || null,
+        ext_source_1: pred.ext_source_1 ? parseFloat(pred.ext_source_1) : null,
+        ext_source_2: pred.ext_source_2 ? parseFloat(pred.ext_source_2) : null,
+        ext_source_3: pred.ext_source_3 ? parseFloat(pred.ext_source_3) : null,
+        default_risk_score: parseFloat(pred.default_risk_score),
+        prediction_result: pred.prediction_result,
+        confidence_level: pred.confidence_level ? parseFloat(pred.confidence_level) : null,
+      }));
+
+      const { error: insertError } = await supabase
+        .from('applications')
+        .insert(applicationsToInsert);
+
+      if (insertError) {
+        console.error("Database insert error:", insertError);
+        throw new Error("Failed to save predictions to database");
+      }
+
+      setProgress(100);
+      setResults(predictions);
+      setStatus("done");
+      
+      toast({ 
+        title: "Batch processed successfully", 
+        description: `${predictions.length} applications processed and saved` 
+      });
+
+    } catch (error: any) {
+      console.error("Batch processing error:", error);
+      setStatus("error");
+      setErrorMsg(error.message || "Failed to process batch upload");
+      toast({ 
+        title: "Processing failed", 
+        description: error.message || "An error occurred", 
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const downloadResults = () => {
+    if (results.length === 0) return;
+    
+    const csv = Papa.unparse(results);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `predictions_${new Date().toISOString()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (

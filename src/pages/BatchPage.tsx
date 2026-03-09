@@ -184,19 +184,30 @@ export default function BatchPage() {
               </div>
             )}
 
-            {status === "uploading" && (
+            {status === "processing" && (
               <div className="mt-4 space-y-2">
                 <Progress value={progress} className="h-2" />
                 <p className="text-xs text-muted-foreground text-center">{progress}% — Processing predictions…</p>
               </div>
             )}
 
+            {status === "error" && errorMsg && (
+              <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{errorMsg}</AlertDescription>
+              </Alert>
+            )}
+
             <div className="mt-6 flex gap-3">
-              <Button onClick={handleUpload} disabled={!file || status === "uploading"} className="flex-1">
-                {status === "uploading" ? "Processing…" : "Upload & Predict"}
+              <Button 
+                onClick={handleProcess} 
+                disabled={!file || status === "processing"} 
+                className="flex-1"
+              >
+                {status === "processing" ? "Processing…" : "Process & Predict"}
               </Button>
-              {status === "done" && (
-                <Button variant="outline" className="gap-2">
+              {status === "done" && results.length > 0 && (
+                <Button variant="outline" className="gap-2" onClick={downloadResults}>
                   <Download className="h-4 w-4" /> Download Results
                 </Button>
               )}

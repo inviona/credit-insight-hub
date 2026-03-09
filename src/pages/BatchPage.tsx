@@ -62,11 +62,23 @@ export default function BatchPage() {
       setProgress(40);
 
       if (!response.ok) {
-        throw new Error("Prediction failed");
+        const errorText = await response.text();
+        console.error("Backend response:", errorText);
+        throw new Error(`Backend error: ${errorText || response.statusText}`);
       }
 
       // Step 2: Parse the response - expecting JSON array of predictions
-      const predictions = await response.json();
+      const responseText = await response.text();
+      console.log("Backend response:", responseText);
+      
+      let predictions;
+      try {
+        predictions = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError);
+        throw new Error("Invalid response format from prediction service");
+      }
+      
       setProgress(60);
 
       if (!Array.isArray(predictions) || predictions.length === 0) {

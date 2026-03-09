@@ -1,5 +1,7 @@
-// API helper — all calls go to the Flask backend.
-// In dev, set VITE_API_URL to your Flask server (e.g. http://localhost:5000)
+import { supabase } from "@/integrations/supabase/client";
+
+// API helper — legacy endpoints can point to an external Flask backend via VITE_API_URL.
+// Batch prediction uses a Lovable Cloud backend function by default.
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
 async function apiFetch(path: string, init?: RequestInit) {
@@ -44,11 +46,19 @@ export async function submitPrediction(data: Record<string, string>) {
 }
 
 export async function submitBatch(file: File) {
-  const form = new FormData();
-  form.append("file", file);
-  const res = await apiFetch("/api/batch", { method: "POST", body: form });
-  if (!res.ok) throw new Error("Batch prediction failed");
-  return res;
+  const csvText = await file.text();
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+
+  // Calls Lovable Cloud backend function (avoids the missing /api/batch Flask route)
+  return fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/credit-risk-batch`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/csv",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: csvText,
+  });
 }
 
 export async function healthCheck() {

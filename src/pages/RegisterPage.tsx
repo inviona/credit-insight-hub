@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
@@ -15,17 +16,47 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username || !email || !password) {
       toast({ title: "Error", description: "All fields are required.", variant: "destructive" });
       return;
     }
+
     setLoading(true);
-    setTimeout(() => {
-      toast({ title: "Account created", description: "Please log in." });
-      navigate("/login");
-    }, 500);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username,
+            display_name: username,
+          },
+          emailRedirectTo: window.location.origin,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account, then log in.",
+        });
+        navigate("/login");
+      }
+    } catch (error: any) {
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Could not create account",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -9,6 +9,7 @@ interface KpiCardProps {
   icon: LucideIcon;
   trend?: "up" | "down" | "neutral";
   className?: string;
+  onClick?: () => void;
 }
 
 export function KpiCard({ title, value, subtitle, icon: Icon, trend, className }: KpiCardProps) {

@@ -1,5 +1,7 @@
-// API helper — all calls go to the Flask backend.
-// In dev, set VITE_API_URL to your Flask server (e.g. http://localhost:5000)
+import { supabase } from "@/integrations/supabase/client";
+
+// API helper — legacy endpoints can point to an external Flask backend via VITE_API_URL.
+// Batch prediction uses a Lovable Cloud backend function by default.
 const BASE = import.meta.env.VITE_API_URL ?? "";
 
 async function apiFetch(path: string, init?: RequestInit) {

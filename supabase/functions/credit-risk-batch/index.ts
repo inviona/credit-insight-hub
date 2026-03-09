@@ -18,14 +18,6 @@ function parseNumber(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function clamp(n: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, n));
-}
-
-function sigmoid(x: number) {
-  return 1 / (1 + Math.exp(-x));
-}
-
 function parseCsvSimple(text: string): Record<string, string>[] {
   const lines = text
     .replace(/^\uFEFF/, "")

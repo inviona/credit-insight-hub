@@ -132,7 +132,7 @@ def feature_engineering_single(row_dict: dict) -> pd.DataFrame:
     return df
 
 
-def predict_single(applicant: dict, threshold: float = 0.5) -> dict:
+def predict_single(applicant: dict, threshold: float = 0.5, include_shap: bool = True) -> dict:
     """Predict credit default risk for a single applicant."""
     row = feature_engineering_single(applicant)
 
@@ -147,7 +147,9 @@ def predict_single(applicant: dict, threshold: float = 0.5) -> dict:
     for col in full.select_dtypes("object").columns:
         full[col] = 0
 
-    prob = float(xgb_model.predict_proba(imputer.transform(full[feat_cols]))[:, 1][0])
+    # Get prediction
+    X_transformed = imputer.transform(full[feat_cols])
+    prob = float(xgb_model.predict_proba(X_transformed)[:, 1][0])
     decision = "DEFAULT" if prob >= threshold else "NO DEFAULT"
 
     if prob < 0.05:
@@ -161,13 +163,41 @@ def predict_single(applicant: dict, threshold: float = 0.5) -> dict:
     else:
         tier, policy = "HIGH", "Decline or require collateral + co-signer."
 
-    return {
+    result = {
         "risk_probability": round(prob, 4),
         "risk_percentage": round(prob * 100, 2),
         "decision": decision,
         "risk_tier": tier,
         "policy": policy,
     }
+
+    # Add SHAP values if requested
+    if include_shap:
+        try:
+            import shap
+            explainer = shap.TreeExplainer(xgb_model)
+            shap_values = explainer.shap_values(X_transformed)
+            
+            # Get feature importance
+            feature_importance = list(zip(feat_cols, shap_values[0]))
+            feature_importance.sort(key=lambda x: abs(x[1]), reverse=True)
+            
+            # Split into risk factors (positive) and protective factors (negative)
+            risk_factors = [(name, float(val)) for name, val in feature_importance if val > 0][:8]
+            protect_factors = [(name, float(val)) for name, val in feature_importance if val < 0][:8]
+            
+            result["shap_values"] = {
+                "top_risk_factors": risk_factors,
+                "top_protect_factors": protect_factors,
+            }
+        except Exception as e:
+            # If SHAP fails, include empty arrays
+            result["shap_values"] = {
+                "top_risk_factors": [],
+                "top_protect_factors": [],
+            }
+
+    return result
 
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
@@ -216,7 +246,7 @@ def health():
 
 
 @app.post("/predict")
-def predict(applicant: Applicant, threshold: float = 0.5):
+def predict(applicant: Applicant, threshold: float = 0.5, include_shap: bool = True):
     try:
         data = applicant.model_dump(exclude_none=True)
         # Convert AGE_YEARS/YEARS_EMPLOYED to DAYS_BIRTH/DAYS_EMPLOYED if needed
@@ -224,7 +254,7 @@ def predict(applicant: Applicant, threshold: float = 0.5):
             data["DAYS_BIRTH"] = -data["AGE_YEARS"] * 365.25
         if "YEARS_EMPLOYED" in data and "DAYS_EMPLOYED" not in data:
             data["DAYS_EMPLOYED"] = -data["YEARS_EMPLOYED"] * 365.25
-        return predict_single(data, threshold)
+        return predict_single(data, threshold, include_shap)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

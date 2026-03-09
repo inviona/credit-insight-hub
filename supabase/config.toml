@@ -1,1 +1,7 @@
 project_id = "axsplggigphblcnmggma"
+
+[functions.credit-risk-batch]
+verify_jwt = false
+
+[functions.credit-risk-single]
+verify_jwt = false

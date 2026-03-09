@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { HelpCircle, Loader2 } from "lucide-react";
 import { FORM_SECTIONS, calcAnnuity } from "@/lib/feature-config";
 import { generateMockPrediction, type PredictionResult } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function AssessmentPage() {
   const [formData, setFormData] = useState<Record<string, string>>({});
@@ -32,17 +33,29 @@ export default function AssessmentPage() {
     });
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Demo: simulate prediction
-    setTimeout(() => {
+    
+    try {
+      const { data, error } = await supabase.functions.invoke("credit-risk-single", {
+        body: formData,
+      });
+
+      if (error) throw error;
+      if (!data) throw new Error("No prediction result received");
+
+      setResult(data as PredictionResult);
+    } catch (error) {
+      console.error("Prediction error:", error);
+      // Fallback to mock on error
       const income = parseFloat(formData.AMT_INCOME_TOTAL || "0");
       const credit = parseFloat(formData.AMT_CREDIT || "0");
       const ratio = credit / (income + 1);
       setResult(generateMockPrediction(ratio < 4));
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (

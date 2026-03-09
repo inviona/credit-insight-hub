@@ -286,9 +286,10 @@ export default function BatchPage() {
           </CardHeader>
           <CardContent>
             <pre className="text-xs font-mono-numbers bg-muted/50 p-3 rounded-lg overflow-x-auto text-muted-foreground">
-{`applicant_name,AMT_INCOME_TOTAL,AMT_CREDIT,AMT_ANNUITY,AGE_YEARS,YEARS_EMPLOYED,CODE_GENDER,EXT_SOURCE_1,EXT_SOURCE_2,EXT_SOURCE_3
-John Doe,75000,250000,1500,35,8,M,720,680,72
-Jane Smith,45000,180000,1200,28,3,F,650,620,58`}
+{`ID,AMT_INCOME_TOTAL,AMT_CREDIT,AMT_ANNUITY,AGE_YEARS,YEARS_EMPLOYED,CODE_GENDER,EXT_SOURCE_1,EXT_SOURCE_2,EXT_SOURCE_3
+1,95646,452075,3607,54,10,M,678,738,88
+2,47171,134338,3717,24,4,F,655,656,57
+3,31072,493065,4203,38,13,F,601,611,48`}
             </pre>
           </CardContent>
         </Card>

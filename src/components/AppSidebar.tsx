@@ -92,18 +92,24 @@ export function AppSidebar() {
       <SidebarFooter className="border-t border-sidebar-border p-3">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-            A
+            {user?.email?.[0].toUpperCase() || "U"}
           </div>
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-sidebar-foreground truncate">Analyst</p>
-              <p className="text-[10px] text-muted-foreground truncate">analyst@bank.com</p>
+              <p className="text-xs font-medium text-sidebar-foreground truncate">
+                {user?.user_metadata?.username || "User"}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate">{user?.email}</p>
             </div>
           )}
           {!collapsed && (
-            <NavLink to="/" className="text-muted-foreground hover:text-foreground">
+            <button 
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              title="Sign out"
+            >
               <LogOut className="h-4 w-4" />
-            </NavLink>
+            </button>
           )}
         </div>
       </SidebarFooter>

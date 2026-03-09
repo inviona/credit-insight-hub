@@ -22,16 +22,46 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/assess" element={<AssessmentPage />} />
-          <Route path="/batch" element={<BatchPage />} />
-          <Route path="/history" element={<HistoryPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <AuthGuard>
+                  <DashboardPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/assess"
+              element={
+                <AuthGuard>
+                  <AssessmentPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/batch"
+              element={
+                <AuthGuard>
+                  <BatchPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/history"
+              element={
+                <AuthGuard>
+                  <HistoryPage />
+                </AuthGuard>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

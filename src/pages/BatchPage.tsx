@@ -100,19 +100,19 @@ export default function BatchPage() {
         user_id: user.id,
         batch_id: batchId,
         is_batch_upload: true,
-        applicant_name: pred.applicant_name || null,
-        amt_income_total: parseFloat(pred.amt_income_total),
-        amt_credit: parseFloat(pred.amt_credit),
-        amt_annuity: parseFloat(pred.amt_annuity),
-        age_years: pred.age_years ? parseFloat(pred.age_years) : null,
-        years_employed: pred.years_employed ? parseFloat(pred.years_employed) : null,
-        code_gender: pred.code_gender || null,
-        ext_source_1: pred.ext_source_1 ? parseFloat(pred.ext_source_1) : null,
-        ext_source_2: pred.ext_source_2 ? parseFloat(pred.ext_source_2) : null,
-        ext_source_3: pred.ext_source_3 ? parseFloat(pred.ext_source_3) : null,
-        default_risk_score: parseFloat(pred.default_risk_score),
-        prediction_result: pred.prediction_result,
-        confidence_level: pred.confidence_level ? parseFloat(pred.confidence_level) : null,
+        applicant_name: pred.id ? `Applicant ${pred.id}` : (pred.applicant_name || null),
+        amt_income_total: parseFloat(pred.amt_income_total || pred.AMT_INCOME_TOTAL),
+        amt_credit: parseFloat(pred.amt_credit || pred.AMT_CREDIT),
+        amt_annuity: parseFloat(pred.amt_annuity || pred.AMT_ANNUITY),
+        age_years: pred.age_years || pred.AGE_YEARS ? parseFloat(pred.age_years || pred.AGE_YEARS) : null,
+        years_employed: pred.years_employed || pred.YEARS_EMPLOYED ? parseFloat(pred.years_employed || pred.YEARS_EMPLOYED) : null,
+        code_gender: pred.code_gender || pred.CODE_GENDER || null,
+        ext_source_1: pred.ext_source_1 || pred.EXT_SOURCE_1 ? parseFloat(pred.ext_source_1 || pred.EXT_SOURCE_1) : null,
+        ext_source_2: pred.ext_source_2 || pred.EXT_SOURCE_2 ? parseFloat(pred.ext_source_2 || pred.EXT_SOURCE_2) : null,
+        ext_source_3: pred.ext_source_3 || pred.EXT_SOURCE_3 ? parseFloat(pred.ext_source_3 || pred.EXT_SOURCE_3) : null,
+        default_risk_score: parseFloat(pred.default_risk_score || pred.risk_score || 0),
+        prediction_result: pred.prediction_result || pred.prediction || "Unknown",
+        confidence_level: pred.confidence_level || pred.confidence ? parseFloat(pred.confidence_level || pred.confidence) : null,
       }));
 
       const { error: insertError } = await supabase
@@ -121,7 +121,7 @@ export default function BatchPage() {
 
       if (insertError) {
         console.error("Database insert error:", insertError);
-        throw new Error("Failed to save predictions to database");
+        throw new Error(`Failed to save predictions: ${insertError.message}`);
       }
 
       setProgress(100);

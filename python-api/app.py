@@ -18,6 +18,7 @@ from typing import Optional
 import joblib
 import numpy as np
 import pandas as pd
+import shap
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -32,8 +33,21 @@ te_maps      = joblib.load(os.path.join(MODEL_DIR, "te_maps.pkl"))
 with open(os.path.join(MODEL_DIR, "feature_columns.json")) as f:
     feat_cols = json.load(f)
 
+try:
+    with open(os.path.join(MODEL_DIR, "thresholds.json")) as f:
+        _thresholds = json.load(f)
+    OPTIMAL_THRESHOLD = float(_thresholds.get("XGBoost", 0.30))
+except FileNotFoundError:
+    OPTIMAL_THRESHOLD = 0.30
+
 # Global mean default rate from training data (≈8.1% for Home Credit)
 GLOBAL_MEAN = float(os.environ.get("GLOBAL_MEAN", "0.0807"))
+
+# Cached SHAP explainer
+try:
+    _shap_explainer = shap.TreeExplainer(xgb_model)
+except Exception:
+    _shap_explainer = None
 
 # ── Helpers (mirrored from notebook) ──────────────────────────────────────────
 
@@ -58,15 +72,18 @@ def occupation_group(job):
 
 
 def feature_engineering_single(row_dict: dict) -> pd.DataFrame:
-    """Apply the same feature engineering as the notebook to a single applicant dict."""
     df = pd.DataFrame([row_dict])
+
+    # Anomaly fixes
+    if "DAYS_EMPLOYED" in df.columns:
+        df.loc[df["DAYS_EMPLOYED"] == 365243, "DAYS_EMPLOYED"] = np.nan
+    if "CODE_GENDER" in df.columns:
+        df.loc[df["CODE_GENDER"] == "XNA", "CODE_GENDER"] = np.nan
 
     # Age
     if "DAYS_BIRTH" in df.columns:
         df["AGE_YEARS"] = (-df["DAYS_BIRTH"]) / 365.25
-        df["AGE_BUCKET"] = pd.cut(
-            df["AGE_YEARS"], bins=[0, 25, 30, 40, 50, 60, 100], labels=[0, 1, 2, 3, 4, 5]
-        ).astype(float).fillna(2)
+        df["AGE_BUCKET"] = pd.cut(df["AGE_YEARS"], bins=[0,25,30,40,50,60,100], labels=[0,1,2,3,4,5]).astype(float).fillna(2)
         df["IS_YOUNG"] = (df["AGE_YEARS"] < 30).astype(int)
 
     # Employment
@@ -85,12 +102,11 @@ def feature_engineering_single(row_dict: dict) -> pd.DataFrame:
         df["ANNUITY_TO_INCOME"] = df["AMT_ANNUITY"] / (df["AMT_INCOME_TOTAL"] + 1)
     if "AMT_CREDIT" in df.columns and "AMT_GOODS_PRICE" in df.columns:
         df["CREDIT_TO_GOODS"] = df["AMT_CREDIT"] / (df["AMT_GOODS_PRICE"] + 1)
+        df["GOODS_CREDIT_DIFF"] = df["AMT_CREDIT"] - df["AMT_GOODS_PRICE"]
     if "AMT_ANNUITY" in df.columns and "AMT_CREDIT" in df.columns:
         df["ANNUITY_TO_CREDIT"] = df["AMT_ANNUITY"] / (df["AMT_CREDIT"] + 1)
         df["CREDIT_TERM"] = df["AMT_CREDIT"] / (df["AMT_ANNUITY"] + 1)
         df["PAYMENT_RATE"] = df["AMT_ANNUITY"] / (df["AMT_CREDIT"] + 1)
-    if "AMT_CREDIT" in df.columns and "AMT_GOODS_PRICE" in df.columns:
-        df["GOODS_CREDIT_DIFF"] = df["AMT_CREDIT"] - df["AMT_GOODS_PRICE"]
     if "AMT_INCOME_TOTAL" in df.columns and "CNT_FAM_MEMBERS" in df.columns:
         df["INCOME_PER_PERSON"] = df["AMT_INCOME_TOTAL"] / df["CNT_FAM_MEMBERS"].clip(lower=1)
     if "CNT_CHILDREN" in df.columns and "CNT_FAM_MEMBERS" in df.columns:
@@ -101,16 +117,16 @@ def feature_engineering_single(row_dict: dict) -> pd.DataFrame:
         df["OCCUPATION_GROUP"] = df["OCCUPATION_TYPE"].map(occupation_group)
 
     # EXT_SOURCE composites
-    ext = [c for c in ["EXT_SOURCE_1", "EXT_SOURCE_2", "EXT_SOURCE_3"] if c in df.columns]
+    ext = [c for c in ["EXT_SOURCE_1","EXT_SOURCE_2","EXT_SOURCE_3"] if c in df.columns]
     if ext:
-        df["EXT_MEAN"] = df[ext].mean(axis=1)
-        df["EXT_MIN"] = df[ext].min(axis=1)
-        df["EXT_MAX"] = df[ext].max(axis=1)
-        df["EXT_STD"] = df[ext].std(axis=1)
-        df["EXT_PROD"] = df[ext].prod(axis=1)
-        weights = {"EXT_SOURCE_1": 1, "EXT_SOURCE_2": 3, "EXT_SOURCE_3": 2}
-        total_w = sum(weights[c] for c in ext)
-        df["EXT_WEIGHTED"] = sum(df[c] * weights[c] for c in ext) / total_w
+        df["EXT_MEAN"]     = df[ext].mean(axis=1)
+        df["EXT_MIN"]      = df[ext].min(axis=1)
+        df["EXT_MAX"]      = df[ext].max(axis=1)
+        df["EXT_STD"]      = df[ext].std(axis=1)
+        df["EXT_PROD"]     = df[ext].prod(axis=1)
+        weights  = {"EXT_SOURCE_1":1,"EXT_SOURCE_2":3,"EXT_SOURCE_3":2}
+        total_w  = sum(weights[c] for c in ext)
+        df["EXT_WEIGHTED"] = sum(df[c]*weights[c] for c in ext) / total_w
         if "EXT_SOURCE_2" in df.columns:
             if "AMT_INCOME_TOTAL" in df.columns:
                 df["EXT2_x_INCOME"] = df["EXT_SOURCE_2"] * df["AMT_INCOME_TOTAL"] / 1e5
@@ -119,7 +135,14 @@ def feature_engineering_single(row_dict: dict) -> pd.DataFrame:
             if "AGE_YEARS" in df.columns:
                 df["EXT2_x_AGE"] = df["EXT_SOURCE_2"] * df["AGE_YEARS"]
 
-    # Credit bureau requests
+    # Bureau stub columns — always present so feature alignment never fails
+    for col in ["BUREAU_LOAN_COUNT","BUREAU_ACTIVE_LOANS","BUREAU_CLOSED_LOANS",
+                "BUREAU_AMT_CREDIT_SUM","BUREAU_AMT_ANNUITY_SUM","BUREAU_MAX_OVERDUE",
+                "BUREAU_DAYS_CREDIT_MAX","BUREAU_ACTIVE_RATIO","TOTAL_ANNUITY","DTI"]:
+        if col not in df.columns:
+            df[col] = np.nan
+
+    # Credit bureau request aggregates
     req_cols = [c for c in df.columns if "AMT_REQ_CREDIT_BUREAU" in c]
     if req_cols:
         df["TOTAL_CREDIT_REQS"] = df[req_cols].sum(axis=1)
@@ -172,30 +195,19 @@ def predict_single(applicant: dict, threshold: float = 0.5, include_shap: bool =
     }
 
     # Add SHAP values if requested
-    if include_shap:
+    if include_shap and _shap_explainer is not None:
         try:
-            import shap
-            explainer = shap.TreeExplainer(xgb_model)
-            shap_values = explainer.shap_values(X_transformed)
-            
-            # Get feature importance
-            feature_importance = list(zip(feat_cols, shap_values[0]))
+            shap_vals = _shap_explainer.shap_values(X_transformed)
+            feature_importance = list(zip(feat_cols, shap_vals[0]))
             feature_importance.sort(key=lambda x: abs(x[1]), reverse=True)
-            
-            # Split into risk factors (positive) and protective factors (negative)
-            risk_factors = [(name, float(val)) for name, val in feature_importance if val > 0][:8]
-            protect_factors = [(name, float(val)) for name, val in feature_importance if val < 0][:8]
-            
+            risk_factors     = [(name, float(val)) for name, val in feature_importance if val > 0][:8]
+            protect_factors  = [(name, float(val)) for name, val in feature_importance if val < 0][:8]
             result["shap_values"] = {
                 "top_risk_factors": risk_factors,
                 "top_protect_factors": protect_factors,
             }
-        except Exception as e:
-            # If SHAP fails, include empty arrays
-            result["shap_values"] = {
-                "top_risk_factors": [],
-                "top_protect_factors": [],
-            }
+        except Exception:
+            result["shap_values"] = {"top_risk_factors": [], "top_protect_factors": []}
 
     return result
 
@@ -237,24 +249,24 @@ class Applicant(BaseModel):
 
 class BatchRequest(BaseModel):
     applicants: list[dict]
-    threshold: float = 0.5
+    threshold: Optional[float] = None
 
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model": "xgboost", "features": len(feat_cols)}
+    return {"status": "ok", "model": "xgboost", "features": len(feat_cols), "threshold": OPTIMAL_THRESHOLD}
 
 
 @app.post("/predict")
-def predict(applicant: Applicant, threshold: float = 0.5, include_shap: bool = True):
+def predict(applicant: Applicant, threshold: Optional[float] = None, include_shap: bool = True):
     try:
         data = applicant.model_dump(exclude_none=True)
-        # Convert AGE_YEARS/YEARS_EMPLOYED to DAYS_BIRTH/DAYS_EMPLOYED if needed
+        t = threshold if threshold is not None else OPTIMAL_THRESHOLD
         if "AGE_YEARS" in data and "DAYS_BIRTH" not in data:
             data["DAYS_BIRTH"] = -data["AGE_YEARS"] * 365.25
         if "YEARS_EMPLOYED" in data and "DAYS_EMPLOYED" not in data:
             data["DAYS_EMPLOYED"] = -data["YEARS_EMPLOYED"] * 365.25
-        return predict_single(data, threshold, include_shap)
+        return predict_single(data, t, include_shap)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -262,6 +274,7 @@ def predict(applicant: Applicant, threshold: float = 0.5, include_shap: bool = T
 @app.post("/predict/batch")
 def predict_batch(req: BatchRequest):
     try:
+        t = req.threshold if req.threshold is not None else OPTIMAL_THRESHOLD
         results = []
         for applicant in req.applicants:
             # Convert AGE_YEARS/YEARS_EMPLOYED to DAYS format
@@ -269,7 +282,7 @@ def predict_batch(req: BatchRequest):
                 applicant["DAYS_BIRTH"] = -applicant["AGE_YEARS"] * 365.25
             if "YEARS_EMPLOYED" in applicant and "DAYS_EMPLOYED" not in applicant:
                 applicant["DAYS_EMPLOYED"] = -applicant["YEARS_EMPLOYED"] * 365.25
-            result = predict_single(applicant, req.threshold)
+            result = predict_single(applicant, t)
             result["id"] = applicant.get("ID") or applicant.get("id")
             results.append(result)
         return results

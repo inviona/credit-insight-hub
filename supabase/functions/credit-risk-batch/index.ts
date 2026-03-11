@@ -66,7 +66,7 @@ async function callPredictionAPI(applicants: any[]): Promise<any[]> {
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ applicants, threshold: 0.5 }),
+    body: JSON.stringify({ applicants }),
   });
 
   if (!response.ok) {

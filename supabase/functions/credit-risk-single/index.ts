@@ -72,7 +72,7 @@ async function callPredictionAPI(applicant: PredictionRequest): Promise<PythonAP
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...applicant, threshold: 0.5 }),
+    body: JSON.stringify(applicant),
   });
 
   if (!response.ok) {

@@ -1,73 +1,103 @@
-# Welcome to your Lovable project
+# Credit Risk Intelligent Predictor
 
-## Project info
+A credit risk assessment and prediction platform built with React, TypeScript, and Supabase.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Tech Stack
 
-## How can I edit this code?
+- **Frontend Framework**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS + shadcn/ui (Radix UI primitives)
+- **Routing**: React Router v6
+- **State Management**: React Context + React Query
+- **Database/Auth**: Supabase
+- **Charts**: Recharts
+- **Form Handling**: React Hook Form + Zod
+- **Testing**: Vitest
 
-There are several ways of editing your application.
+## Software Architecture
 
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+src/
+├── components/          # Reusable UI components
+│   ├── ui/             # shadcn/ui component library
+│   └── *.tsx           # Custom components (DashboardLayout, AuthGuard, etc.)
+├── contexts/           # React Context providers
+│   └── AuthContext.tsx # Authentication state management
+├── hooks/              # Custom React hooks
+├── integrations/       # Third-party service integrations
+│   └── supabase/       # Supabase client and types
+├── lib/                # Utilities and API helpers
+├── pages/              # Route-level page components
+└── App.tsx             # Root component with routing
 ```
 
-**Edit a file directly in GitHub**
+### Core Pages
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+| Page | Description |
+|------|-------------|
+| `LandingPage` | Public marketing/landing page |
+| `LoginPage` / `RegisterPage` | Authentication pages |
+| `DashboardPage` | Main dashboard with KPIs and charts |
+| `AssessmentPage` | Single credit risk assessment form |
+| `BatchPage` | Bulk CSV processing for credit predictions |
+| `HistoryPage` | View past assessment results |
 
-**Use GitHub Codespaces**
+### Component Architecture
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+App (Root)
+├── QueryClientProvider (React Query)
+│   └── TooltipProvider
+│       └── BrowserRouter
+│           └── AuthProvider
+│               └── Routes
+│                   ├── Public Routes (Landing, Login, Register)
+│                   └── Protected Routes (wrapped in AuthGuard)
+│                       └── DashboardLayout
+│                           └── Page Components (Dashboard, Assessment, Batch, History)
+```
 
-## What technologies are used for this project?
+### Key Design Patterns
 
-This project is built with:
+**Protected Routes**: The `AuthGuard` component wraps protected pages and redirects unauthenticated users to login.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+**Layout Pattern**: The `DashboardLayout` provides a consistent sidebar navigation structure for all authenticated pages.
 
-## How can I deploy this project?
+**Authentication Flow**: `AuthContext` manages user session state using Supabase's auth listeners and provides `useAuth()` hook for consuming components.
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+**API Layer**: The `lib/api.ts` provides a centralized API client that communicates with a Flask backend for predictions and Supabase Edge Functions for batch processing.
 
-## Can I connect a custom domain to my Lovable project?
+### Routing Structure
 
-Yes, you can!
+| Route | Component | Auth Required |
+|-------|-----------|---------------|
+| `/` | LandingPage | No |
+| `/login` | LoginPage | No |
+| `/register` | RegisterPage | No |
+| `/dashboard` | DashboardPage | Yes |
+| `/assess` | AssessmentPage | Yes |
+| `/batch` | BatchPage | Yes |
+| `/history` | HistoryPage | Yes |
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Getting Started
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm test
+```
+
+## Environment Variables
+
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
+VITE_API_URL=your_flask_api_url  # optional
+```

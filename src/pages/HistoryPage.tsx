@@ -7,11 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Calendar as CalendarIcon, Plus, Info, Loader2 } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Plus, Info, Loader2, SlidersHorizontal, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -69,6 +70,7 @@ export default function HistoryPage() {
   const [creditMax, setCreditMax] = useState("");
   const [riskScoreMin, setRiskScoreMin] = useState("");
   const [riskScoreMax, setRiskScoreMax] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
     fetchApplications();
@@ -178,6 +180,33 @@ export default function HistoryPage() {
     return data;
   }, [applications, filter, search, dateFrom, dateTo, incomeMin, incomeMax, creditMin, creditMax, riskScoreMin, riskScoreMax]);
 
+  const clearAllFilters = () => {
+    setSearch("");
+    setDateFrom(undefined);
+    setDateTo(undefined);
+    setIncomeMin("");
+    setIncomeMax("");
+    setCreditMin("");
+    setCreditMax("");
+    setRiskScoreMin("");
+    setRiskScoreMax("");
+    setFilter("all");
+  };
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (dateFrom) count++;
+    if (dateTo) count++;
+    if (incomeMin) count++;
+    if (incomeMax) count++;
+    if (creditMin) count++;
+    if (creditMax) count++;
+    if (riskScoreMin) count++;
+    if (riskScoreMax) count++;
+    if (filter !== "all") count++;
+    return count;
+  }, [dateFrom, dateTo, incomeMin, incomeMax, creditMin, creditMax, riskScoreMin, riskScoreMax, filter]);
+
   const getRiskFactors = (app: LoanApplication) => {
     const income = app.person_income || 0;
     const loan = app.loan_amount || 0;
@@ -225,154 +254,251 @@ export default function HistoryPage() {
             </Button>
           </div>
 
-          {/* Enhanced Filter Bar */}
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4">
-                {/* Search */}
-                <div className="xl:col-span-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by customer ID, name, email..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="pl-9 bg-background/50"
-                    />
-                  </div>
-                </div>
-
-                {/* Date Range */}
-                <div className="flex gap-2">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="justify-start text-left font-normal bg-background/50">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateFrom ? format(dateFrom, "MMM dd") : "From"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={dateFrom}
-                        onSelect={setDateFrom}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="justify-start text-left font-normal bg-background/50">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {dateTo ? format(dateTo, "MMM dd") : "To"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={dateTo}
-                        onSelect={setDateTo}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                {/* Income Range */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Min Income"
-                    value={incomeMin}
-                    onChange={(e) => setIncomeMin(e.target.value)}
-                    className="bg-background/50"
-                    type="number"
-                  />
-                  <Input
-                    placeholder="Max Income"
-                    value={incomeMax}
-                    onChange={(e) => setIncomeMax(e.target.value)}
-                    className="bg-background/50"
-                    type="number"
-                  />
-                </div>
-
-                {/* Credit Amount Range */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Min Loan"
-                    value={creditMin}
-                    onChange={(e) => setCreditMin(e.target.value)}
-                    className="bg-background/50"
-                    type="number"
-                  />
-                  <Input
-                    placeholder="Max Loan"
-                    value={creditMax}
-                    onChange={(e) => setCreditMax(e.target.value)}
-                    className="bg-background/50"
-                    type="number"
-                  />
-                </div>
-
-                {/* Risk Score Range */}
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Min Risk %"
-                    value={riskScoreMin}
-                    onChange={(e) => setRiskScoreMin(e.target.value)}
-                    className="bg-background/50"
-                    type="number"
-                    min="0"
-                    max="100"
-                  />
-                  <Input
-                    placeholder="Max Risk %"
-                    value={riskScoreMax}
-                    onChange={(e) => setRiskScoreMax(e.target.value)}
-                    className="bg-background/50"
-                    type="number"
-                    min="0"
-                    max="100"
-                  />
-                </div>
-
-                {/* Decision Filter */}
-                <Select value={filter} onValueChange={(v) => setFilter(v as "all" | "APPROVED" | "REJECTED" | "PENDING")}>
-                  <SelectTrigger className="bg-background/50">
-                    <SelectValue placeholder="Decision" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Decisions</SelectItem>
-                    <SelectItem value="APPROVED">Approved</SelectItem>
-                    <SelectItem value="REJECTED">Rejected</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Clear Filters */}
-                <Button 
-                  variant="ghost" 
-                  onClick={() => {
-                    setSearch("");
-                    setDateFrom(undefined);
-                    setDateTo(undefined);
-                    setIncomeMin("");
-                    setIncomeMax("");
-                    setCreditMin("");
-                    setCreditMax("");
-                    setRiskScoreMin("");
-                    setRiskScoreMax("");
-                    setFilter("all");
-                  }}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Clear All
-                </Button>
+          {/* Filter Bar */}
+          <div className="space-y-3">
+            {/* Search + Filter Button Row */}
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by customer ID, name, email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="pl-9"
+                />
               </div>
-            </CardContent>
-          </Card>
+
+              <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("gap-2", activeFilterCount > 0 && "border-primary bg-primary/5")}>
+                    <SlidersHorizontal className="h-4 w-4" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="start">
+                  <div className="p-4 space-y-5">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-sm">Filters</h3>
+                      <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={clearAllFilters}>
+                        Clear all
+                      </Button>
+                    </div>
+
+                    {/* Date Range */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Date Range</label>
+                      <div className="flex gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="flex-1 justify-start text-left font-normal">
+                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                              {dateFrom ? format(dateFrom, "MMM dd, yyyy") : "From date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={dateFrom}
+                              onSelect={setDateFrom}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="outline" size="sm" className="flex-1 justify-start text-left font-normal">
+                              <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                              {dateTo ? format(dateTo, "MMM dd, yyyy") : "To date"}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={dateTo}
+                              onSelect={setDateTo}
+                              initialFocus
+                              className="p-3 pointer-events-auto"
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+
+                    {/* Income Range */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Income Range</label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Min"
+                          value={incomeMin}
+                          onChange={(e) => setIncomeMin(e.target.value)}
+                          className="h-8"
+                          type="number"
+                        />
+                        <Input
+                          placeholder="Max"
+                          value={incomeMax}
+                          onChange={(e) => setIncomeMax(e.target.value)}
+                          className="h-8"
+                          type="number"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Loan Amount Range */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Loan Amount</label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Min"
+                          value={creditMin}
+                          onChange={(e) => setCreditMin(e.target.value)}
+                          className="h-8"
+                          type="number"
+                        />
+                        <Input
+                          placeholder="Max"
+                          value={creditMax}
+                          onChange={(e) => setCreditMax(e.target.value)}
+                          className="h-8"
+                          type="number"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Risk Score Range */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Risk Score (%)</label>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Min"
+                          value={riskScoreMin}
+                          onChange={(e) => setRiskScoreMin(e.target.value)}
+                          className="h-8"
+                          type="number"
+                          min="0"
+                          max="100"
+                        />
+                        <Input
+                          placeholder="Max"
+                          value={riskScoreMax}
+                          onChange={(e) => setRiskScoreMax(e.target.value)}
+                          className="h-8"
+                          type="number"
+                          min="0"
+                          max="100"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Decision */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Decision</label>
+                      <Select value={filter} onValueChange={(v) => setFilter(v as "all" | "APPROVED" | "REJECTED" | "PENDING")}>
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder="All decisions" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Decisions</SelectItem>
+                          <SelectItem value="APPROVED">Approved</SelectItem>
+                          <SelectItem value="REJECTED">Rejected</SelectItem>
+                          <SelectItem value="PENDING">Pending</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              {activeFilterCount > 0 && (
+                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={clearAllFilters}>
+                  <X className="h-3.5 w-3.5" />
+                  Clear all
+                </Button>
+              )}
+            </div>
+
+            {/* Decision Pill Tabs */}
+            <div className="flex items-center gap-1.5">
+              {(["all", "APPROVED", "REJECTED", "PENDING"] as const).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-full text-xs font-medium transition-colors",
+                    filter === status
+                      ? status === "APPROVED"
+                        ? "bg-success/15 text-success"
+                        : status === "REJECTED"
+                        ? "bg-destructive/15 text-destructive"
+                        : status === "PENDING"
+                        ? "bg-warning/15 text-warning"
+                        : "bg-primary/10 text-primary"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  {status === "all" ? "All" : status.charAt(0) + status.slice(1).toLowerCase()}
+                  {status !== "all" && (
+                    <span className="ml-1.5 opacity-70">
+                      ({applications.filter((a) => getDecision(a) === status).length})
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Active Filter Tags */}
+            {activeFilterCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {dateFrom && (
+                  <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1 text-xs">
+                    <span className="font-medium">From: {format(dateFrom, "MMM dd, yyyy")}</span>
+                    <button onClick={() => setDateFrom(undefined)} className="text-muted-foreground hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {dateTo && (
+                  <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1 text-xs">
+                    <span className="font-medium">To: {format(dateTo, "MMM dd, yyyy")}</span>
+                    <button onClick={() => setDateTo(undefined)} className="text-muted-foreground hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {(incomeMin || incomeMax) && (
+                  <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1 text-xs">
+                    <span className="font-medium">Income: ${incomeMin || "0"} - ${incomeMax || "∞"}</span>
+                    <button onClick={() => { setIncomeMin(""); setIncomeMax(""); }} className="text-muted-foreground hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {(creditMin || creditMax) && (
+                  <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1 text-xs">
+                    <span className="font-medium">Loan: ${creditMin || "0"} - ${creditMax || "∞"}</span>
+                    <button onClick={() => { setCreditMin(""); setCreditMax(""); }} className="text-muted-foreground hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {(riskScoreMin || riskScoreMax) && (
+                  <span className="inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1 text-xs">
+                    <span className="font-medium">Risk: {riskScoreMin || "0"}% - {riskScoreMax || "100"}%</span>
+                    <button onClick={() => { setRiskScoreMin(""); setRiskScoreMax(""); }} className="text-muted-foreground hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Data Table */}
           <Card className="bg-card border-border">
@@ -477,10 +603,10 @@ export default function HistoryPage() {
 
         {/* Application Details Side Panel */}
         <Sheet open={!!selectedApplication} onOpenChange={(open) => !open && setSelectedApplication(null)}>
-          <SheetContent className="w-[35%] min-w-[500px] bg-card border-l-border">
+          <SheetContent className="w-[35%] min-w-[500px] bg-card border-l-border p-0">
             {selectedApplication && (
               <>
-                <SheetHeader className="space-y-4">
+                <SheetHeader className="space-y-4 px-6 pt-6 pb-4">
                   <div className="space-y-2">
                     <SheetTitle className="text-lg font-semibold">
                       {selectedApplication.customer_id || selectedApplication.id.slice(0, 8).toUpperCase()}
@@ -498,7 +624,8 @@ export default function HistoryPage() {
                   </div>
                 </SheetHeader>
 
-                <div className="mt-6 space-y-6">
+                <ScrollArea className="h-[calc(100vh-8rem)] px-6 pb-6">
+                  <div className="space-y-6">
                   {/* Contact Info */}
                   {selectedApplication.full_name && (
                     <div className="space-y-3">
@@ -597,7 +724,8 @@ export default function HistoryPage() {
                       ))}
                     </div>
                   </div>
-                </div>
+                  </div>
+                </ScrollArea>
               </>
             )}
           </SheetContent>

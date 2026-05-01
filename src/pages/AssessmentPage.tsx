@@ -74,7 +74,7 @@ export default function AssessmentPage() {
         .insert({
           customer_id: customerId,
           user_id: user.id,
-          full_name: formData.NAME_TYPE_SUITE_FIRST || formData.NAME_FIRST || formData.FULL_NAME || null,
+          full_name: formData.FULL_NAME || null,
           email: formData.EMAIL || null,
           phone: formData.PHONE || null,
           person_age: formData.AGE_YEARS ? parseInt(formData.AGE_YEARS) : null,

@@ -94,6 +94,9 @@ export const FORM_SECTIONS: { title: string; icon: string; fields: FormField[] }
     title: "Applicant Profile",
     icon: "👤",
     fields: [
+      { name: "FULL_NAME", label: "Full Name", type: "text", placeholder: "e.g. John Doe", required: true },
+      { name: "EMAIL", label: "Email", type: "text", placeholder: "e.g. john@example.com" },
+      { name: "PHONE", label: "Phone", type: "text", placeholder: "e.g. +1 555 123 4567" },
       { name: "AGE_YEARS", label: "Age (years)", type: "number", placeholder: "e.g. 35", required: true, min: 18, max: 100 },
       { name: "YEARS_EMPLOYED", label: "Years Employed", type: "number", placeholder: "e.g. 8", min: 0, max: 60, step: 0.5 },
       { name: "CODE_GENDER", label: "Gender", type: "select", options: [{ value: "M", label: "Male" }, { value: "F", label: "Female" }] },

@@ -8,20 +8,27 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle, Loader2 } from "lucide-react";
+import { HelpCircle, Loader2, CheckCircle2 } from "lucide-react";
 import { FORM_SECTIONS, calcAnnuity } from "@/lib/feature-config";
 import { generateMockPrediction, type PredictionResult } from "@/lib/mock-data";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
+
+function generateCustomerId(): string {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `CUST-${timestamp}${random}`;
+}
 
 export default function AssessmentPage() {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
 
   const updateField = useCallback((name: string, value: string) => {
     setFormData((prev) => {
       const next = { ...prev, [name]: value };
-      // Auto-calc annuity
       if (["AMT_CREDIT", "INTEREST_RATE", "TERM_MONTHS"].includes(name)) {
         const principal = parseFloat(next.AMT_CREDIT || "0");
         const rate = parseFloat(next.INTEREST_RATE || "0");
@@ -37,24 +44,82 @@ export default function AssessmentPage() {
     e.preventDefault();
     setLoading(true);
     
+    const customerId = generateCustomerId();
+    
     try {
-      const { data, error } = await supabase.functions.invoke("credit-risk-single", {
+      const { data: predictionData, error } = await supabase.functions.invoke("credit-risk-single", {
         body: formData,
       });
 
-      if (error) throw error;
-      if (!data) throw new Error("No prediction result received");
+      let prediction: PredictionResult;
 
-      setResult(data as PredictionResult);
+      if (error || !predictionData) {
+        console.error("Prediction error:", error);
+        const income = parseFloat(formData.AMT_INCOME_TOTAL || "0");
+        const credit = parseFloat(formData.AMT_CREDIT || "0");
+        const ratio = credit / (income + 1);
+        prediction = { ...generateMockPrediction(ratio < 4), customer_id: customerId };
+      } else {
+        prediction = { ...(predictionData as PredictionResult), customer_id: customerId };
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error("You must be logged in to save assessments");
+      }
+
+      setSaving(true);
+      const { error: insertError } = await supabase
+        .from('loan_applications')
+        .insert({
+          customer_id: customerId,
+          user_id: user.id,
+          full_name: formData.NAME_TYPE_SUITE_FIRST || formData.NAME_FIRST || formData.FULL_NAME || null,
+          email: formData.EMAIL || null,
+          phone: formData.PHONE || null,
+          person_age: formData.AGE_YEARS ? parseInt(formData.AGE_YEARS) : null,
+          person_income: parseFloat(formData.AMT_INCOME_TOTAL || formData.PERSON_INCOME || "0"),
+          person_emp_length: formData.YEARS_EMPLOYED ? parseFloat(formData.YEARS_EMPLOYED) : null,
+          loan_amount: parseFloat(formData.AMT_CREDIT || formData.LOAN_AMOUNT || "0"),
+          loan_int_rate: formData.INTEREST_RATE || formData.LOAN_INT_RATE ? parseFloat(formData.INTEREST_RATE || formData.LOAN_INT_RATE) : null,
+          loan_term: formData.TERM_MONTHS || formData.LOAN_TERM ? parseInt(formData.TERM_MONTHS || formData.LOAN_TERM) : null,
+          credit_score: formData.EXT_SOURCE_1 || formData.CREDIT_SCORE ? parseInt(formData.EXT_SOURCE_1 || formData.CREDIT_SCORE) : null,
+          num_credit_lines: formData.EXT_SOURCE_2 ? parseInt(formData.EXT_SOURCE_2) : null,
+          credit_history_length: formData.CREDIT_HISTORY_LENGTH || formData.CB_PERSON_CRED_HIST_LENGTH ? parseInt(formData.CREDIT_HISTORY_LENGTH || formData.CB_PERSON_CRED_HIST_LENGTH) : null,
+          monthly_expenses: formData.AMT_ANNUITY || formData.MONTHLY_EXPENSES ? parseFloat(formData.AMT_ANNUITY || formData.MONTHLY_EXPENSES) : null,
+          existing_debt: formData.EXISTING_DEBT ? parseFloat(formData.EXISTING_DEBT) : null,
+          loan_percent_income: formData.LOAN_PERCENT_INCOME ? parseFloat(formData.LOAN_PERCENT_INCOME) : null,
+          person_home_ownership: formData.PERSON_HOME_OWNERSHIP || null,
+          loan_grade: formData.LOAN_GRADE || null,
+          loan_purpose: formData.LOAN_PURPOSE || formData.NAME_INCOME_TYPE || null,
+          cb_person_default_on_file: formData.CB_PERSON_DEFAULT_ON_FILE || null,
+          employment_status: formData.EMPLOYMENT_STATUS || formData.NAME_INCOME_TYPE || null,
+          num_delinquencies: formData.NUM_DELINQUENCIES ? parseInt(formData.NUM_DELINQUENCIES) : null,
+          status: prediction.decision === "APPROVED" ? "approved" : "rejected",
+          date_of_birth: formData.DATE_OF_BIRTH || null,
+          address: formData.ADDRESS || null,
+          city: formData.CITY || null,
+          state: formData.STATE || null,
+          zip_code: formData.ZIP_CODE || null,
+          bankruptcy_history: formData.BANKRUPTCY_HISTORY === "true" ? true : formData.BANKRUPTCY_HISTORY === "false" ? false : null,
+        });
+
+      if (insertError) {
+        console.error("Database insert error:", insertError);
+        const msg = insertError.message || "Unknown error";
+        const details = insertError.details || insertError.hint || "";
+        toast({ title: "Warning", description: `Could not save to database: ${msg}${details ? ` (${details})` : ""}`, variant: "destructive" });
+      } else {
+        toast({ title: "Assessment saved", description: `Customer ID: ${customerId}` });
+      }
+
+      setResult(prediction);
     } catch (error) {
-      console.error("Prediction error:", error);
-      // Fallback to mock on error
-      const income = parseFloat(formData.AMT_INCOME_TOTAL || "0");
-      const credit = parseFloat(formData.AMT_CREDIT || "0");
-      const ratio = credit / (income + 1);
-      setResult(generateMockPrediction(ratio < 4));
+      console.error("Assessment error:", error);
+      toast({ title: "Error", description: error instanceof Error ? error.message : "Assessment failed", variant: "destructive" });
     } finally {
       setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -124,11 +189,27 @@ export default function AssessmentPage() {
           </Accordion>
 
           <div className="mt-6">
-            <Button type="submit" size="lg" className="w-full gap-2" disabled={loading}>
-              {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Running Assessment…</> : "Run Credit Assessment"}
+            <Button type="submit" size="lg" className="w-full gap-2" disabled={loading || saving}>
+              {loading ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Running Assessment…</>
+              ) : saving ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Saving to Database…</>
+              ) : (
+                "Run Credit Assessment"
+              )}
             </Button>
           </div>
         </form>
+
+        {result && (
+          <div className="bg-success/10 border border-success/30 rounded-lg p-4 flex items-center gap-3">
+            <CheckCircle2 className="h-5 w-5 text-success shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-success">Assessment saved successfully</p>
+              <p className="text-xs text-muted-foreground">Customer ID: <span className="font-mono font-bold">{result.customer_id}</span></p>
+            </div>
+          </div>
+        )}
       </div>
 
       {result && <PredictionPanel result={result} onClose={() => setResult(null)} />}

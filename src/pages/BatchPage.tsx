@@ -98,25 +98,22 @@ export default function BatchPage() {
       // Step 5: Save all predictions to database
       const applicationsToInsert = predictions.map((pred: any) => ({
         user_id: user.id,
-        batch_id: batchId,
-        is_batch_upload: true,
-        applicant_name: pred.id ? `Applicant ${pred.id}` : (pred.applicant_name || null),
-        amt_income_total: parseFloat(pred.amt_income_total || pred.AMT_INCOME_TOTAL),
-        amt_credit: parseFloat(pred.amt_credit || pred.AMT_CREDIT),
-        amt_annuity: parseFloat(pred.amt_annuity || pred.AMT_ANNUITY),
-        age_years: pred.age_years || pred.AGE_YEARS ? parseFloat(pred.age_years || pred.AGE_YEARS) : null,
-        years_employed: pred.years_employed || pred.YEARS_EMPLOYED ? parseFloat(pred.years_employed || pred.YEARS_EMPLOYED) : null,
-        code_gender: pred.code_gender || pred.CODE_GENDER || null,
-        ext_source_1: pred.ext_source_1 || pred.EXT_SOURCE_1 ? parseFloat(pred.ext_source_1 || pred.EXT_SOURCE_1) : null,
-        ext_source_2: pred.ext_source_2 || pred.EXT_SOURCE_2 ? parseFloat(pred.ext_source_2 || pred.EXT_SOURCE_2) : null,
-        ext_source_3: pred.ext_source_3 || pred.EXT_SOURCE_3 ? parseFloat(pred.ext_source_3 || pred.EXT_SOURCE_3) : null,
-        default_risk_score: parseFloat(pred.default_risk_score || pred.risk_score || 0),
-        prediction_result: pred.prediction_result || pred.prediction || "Unknown",
-        confidence_level: pred.confidence_level || pred.confidence ? parseFloat(pred.confidence_level || pred.confidence) : null,
+        full_name: pred.id ? `Applicant ${pred.id}` : (pred.applicant_name || pred.full_name || null),
+        person_income: parseFloat(pred.amt_income_total || pred.AMT_INCOME_TOTAL || pred.person_income || pred.PERSON_INCOME || "0"),
+        person_age: pred.age_years || pred.AGE_YEARS || pred.person_age || pred.PERSON_AGE ? parseInt(pred.age_years || pred.AGE_YEARS || pred.person_age || pred.PERSON_AGE) : null,
+        person_emp_length: pred.years_employed || pred.YEARS_EMPLOYED || pred.person_emp_length || pred.PERSON_EMP_LENGTH ? parseFloat(pred.years_employed || pred.YEARS_EMPLOYED || pred.person_emp_length || pred.PERSON_EMP_LENGTH) : null,
+        loan_amount: parseFloat(pred.amt_credit || pred.AMT_CREDIT || pred.loan_amount || pred.LOAN_AMOUNT || "0"),
+        loan_int_rate: pred.loan_int_rate || pred.LOAN_INT_RATE ? parseFloat(pred.loan_int_rate || pred.LOAN_INT_RATE) : null,
+        loan_term: pred.loan_term || pred.LOAN_TERM ? parseInt(pred.loan_term || pred.LOAN_TERM) : null,
+        credit_score: pred.ext_source_1 || pred.EXT_SOURCE_1 || pred.credit_score || pred.CREDIT_SCORE ? parseInt(pred.ext_source_1 || pred.EXT_SOURCE_1 || pred.credit_score || pred.CREDIT_SCORE) : null,
+        num_credit_lines: pred.ext_source_2 || pred.EXT_SOURCE_2 || pred.num_credit_lines || pred.NUM_CREDIT_LINES ? parseInt(pred.ext_source_2 || pred.EXT_SOURCE_2 || pred.num_credit_lines || pred.NUM_CREDIT_LINES) : null,
+        cb_person_cred_hist_length: pred.ext_source_3 || pred.EXT_SOURCE_3 || pred.cb_person_cred_hist_length || pred.CB_PERSON_CRED_HIST_LENGTH ? parseInt(pred.ext_source_3 || pred.EXT_SOURCE_3 || pred.cb_person_cred_hist_length || pred.CB_PERSON_CRED_HIST_LENGTH) : null,
+        monthly_expenses: pred.amt_annuity || pred.AMT_ANNUITY || pred.monthly_expenses || pred.MONTHLY_EXPENSES ? parseFloat(pred.amt_annuity || pred.AMT_ANNUITY || pred.monthly_expenses || pred.MONTHLY_EXPENSES) : null,
+        status: pred.prediction_result || pred.prediction || pred.status ? (pred.prediction_result || pred.prediction || pred.status).toLowerCase() : "pending",
       }));
 
       const { error: insertError } = await supabase
-        .from('applications')
+        .from('loan_applications')
         .insert(applicationsToInsert);
 
       if (insertError) {
@@ -133,10 +130,10 @@ export default function BatchPage() {
         description: `${predictions.length} applications processed and saved` 
       });
 
-    } catch (error: any) {
+    } catch (error) {
       console.error("Batch processing error:", error);
       setStatus("error");
-      setErrorMsg(error.message || "Failed to process batch upload");
+      setErrorMsg(error instanceof Error ? error.message : "Failed to process batch upload");
       toast({ 
         title: "Processing failed", 
         description: error.message || "An error occurred", 

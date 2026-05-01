@@ -1,4 +1,4 @@
-import { X, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { X, CheckCircle2, XCircle, AlertTriangle, Copy } from "lucide-react";
 import { ShapChart } from "./ShapChart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,10 @@ export function PredictionPanel({ result, onClose }: PredictionPanelProps) {
     High: "text-destructive",
   }[result.risk_level] ?? "text-muted-foreground";
 
+  const copyCustomerId = () => {
+    navigator.clipboard.writeText(result.customer_id);
+  };
+
   return (
     <div className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-card border-l border-border shadow-2xl overflow-y-auto animate-slide-in-right">
       <div className="sticky top-0 z-10 flex items-center justify-between bg-card/95 backdrop-blur p-4 border-b border-border">
@@ -30,6 +34,17 @@ export function PredictionPanel({ result, onClose }: PredictionPanelProps) {
       </div>
 
       <div className="p-6 space-y-8">
+        {/* Customer ID */}
+        <div className="bg-muted/30 rounded-lg p-4 border border-border">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Customer ID</p>
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-mono font-bold">{result.customer_id}</span>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={copyCustomerId}>
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
+
         {/* Decision Badge */}
         <div className="text-center space-y-4">
           <div className={cn(

@@ -320,9 +320,9 @@ export default function LandingPage() {
       <nav className="border-b border-white/5 bg-[#0a0f1c]/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between h-16 px-6 lg:px-12">
           <div className="flex items-center gap-3">
-            <img src="/logo-test.png" alt="Logo" className="h-10 object-contain" />
+            <img src="/new-updated-logo.png" alt="Logo" className="h-10 object-contain" />
             <span className="font-bold text-lg tracking-tight text-white">
-              Credit Risk IA
+              Credit Risk Intelligent Predictor
             </span>
           </div>
 
@@ -657,7 +657,7 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-4 gap-12 mb-16">
             <div className="space-y-6 md:col-span-1">
               <div className="flex items-center gap-3">
-                <img src="/logo-test.png" alt="Logo" className="h-8 object-contain" />
+                <img src="/new-updated-logo.png" alt="Logo" className="h-8 object-contain" />
                 <span className="font-bold text-xl text-white">
                   Credit Risk IA
                 </span>

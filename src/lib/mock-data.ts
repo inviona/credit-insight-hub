@@ -21,6 +21,7 @@ export interface ShapFactor {
 }
 
 export interface PredictionResult {
+  customer_id: string;
   raw_probability: number;
   adjusted_probability: number;
   risk_level: string;
@@ -71,7 +72,10 @@ export function generateMockHistory(count = 25): HistoryRecord[] {
 export function generateMockPrediction(isApproved = true): PredictionResult {
   const rawProb = isApproved ? 0.28 : 0.72;
   const adjProb = isApproved ? 0.34 : 0.78;
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 5).toUpperCase();
   return {
+    customer_id: `CUST-${timestamp}${random}`,
     raw_probability: rawProb,
     adjusted_probability: adjProb,
     risk_level: isApproved ? "Moderate" : "High",

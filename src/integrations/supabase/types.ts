@@ -7,76 +7,122 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
-      applications: {
+      loan_applications: {
         Row: {
-          age_years: number | null
-          amt_annuity: number
-          amt_credit: number
-          amt_income_total: number
-          applicant_name: string | null
-          batch_id: string | null
-          code_gender: string | null
-          confidence_level: number | null
-          created_at: string | null
-          default_risk_score: number
-          ext_source_1: number | null
-          ext_source_2: number | null
-          ext_source_3: number | null
           id: string
-          is_batch_upload: boolean | null
-          prediction_result: string
-          updated_at: string | null
           user_id: string | null
-          years_employed: number | null
+          status: string | null
+          full_name: string | null
+          email: string | null
+          phone: string | null
+          date_of_birth: string | null
+          address: string | null
+          city: string | null
+          state: string | null
+          zip_code: string | null
+          employment_status: string | null
+          annual_income: number | null
+          monthly_expenses: number | null
+          existing_debt: number | null
+          loan_amount: number | null
+          loan_purpose: string | null
+          loan_term: number | null
+          credit_score: number | null
+          credit_history_length: number | null
+          num_credit_lines: number | null
+          num_delinquencies: number | null
+          bankruptcy_history: boolean | null
+          person_age: number | null
+          person_income: number | null
+          person_emp_length: number | null
+          loan_int_rate: number | null
+          loan_percent_income: number | null
+          cb_person_cred_hist_length: number | null
+          person_home_ownership: string | null
+          loan_grade: string | null
+          cb_person_default_on_file: string | null
+          customer_id: string | null
+          created_at: string | null
+          updated_at: string | null
         }
         Insert: {
-          age_years?: number | null
-          amt_annuity: number
-          amt_credit: number
-          amt_income_total: number
-          applicant_name?: string | null
-          batch_id?: string | null
-          code_gender?: string | null
-          confidence_level?: number | null
-          created_at?: string | null
-          default_risk_score: number
-          ext_source_1?: number | null
-          ext_source_2?: number | null
-          ext_source_3?: number | null
           id?: string
-          is_batch_upload?: boolean | null
-          prediction_result: string
-          updated_at?: string | null
           user_id?: string | null
-          years_employed?: number | null
+          status?: string | null
+          full_name?: string | null
+          email?: string | null
+          phone?: string | null
+          date_of_birth?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
+          employment_status?: string | null
+          annual_income?: number | null
+          monthly_expenses?: number | null
+          existing_debt?: number | null
+          loan_amount?: number | null
+          loan_purpose?: string | null
+          loan_term?: number | null
+          credit_score?: number | null
+          credit_history_length?: number | null
+          num_credit_lines?: number | null
+          num_delinquencies?: number | null
+          bankruptcy_history?: boolean | null
+          person_age?: number | null
+          person_income?: number | null
+          person_emp_length?: number | null
+          loan_int_rate?: number | null
+          loan_percent_income?: number | null
+          cb_person_cred_hist_length?: number | null
+          person_home_ownership?: string | null
+          loan_grade?: string | null
+          cb_person_default_on_file?: string | null
+          customer_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Update: {
-          age_years?: number | null
-          amt_annuity?: number
-          amt_credit?: number
-          amt_income_total?: number
-          applicant_name?: string | null
-          batch_id?: string | null
-          code_gender?: string | null
-          confidence_level?: number | null
-          created_at?: string | null
-          default_risk_score?: number
-          ext_source_1?: number | null
-          ext_source_2?: number | null
-          ext_source_3?: number | null
           id?: string
-          is_batch_upload?: boolean | null
-          prediction_result?: string
-          updated_at?: string | null
           user_id?: string | null
-          years_employed?: number | null
+          status?: string | null
+          full_name?: string | null
+          email?: string | null
+          phone?: string | null
+          date_of_birth?: string | null
+          address?: string | null
+          city?: string | null
+          state?: string | null
+          zip_code?: string | null
+          employment_status?: string | null
+          annual_income?: number | null
+          monthly_expenses?: number | null
+          existing_debt?: number | null
+          loan_amount?: number | null
+          loan_purpose?: string | null
+          loan_term?: number | null
+          credit_score?: number | null
+          credit_history_length?: number | null
+          num_credit_lines?: number | null
+          num_delinquencies?: number | null
+          bankruptcy_history?: boolean | null
+          person_age?: number | null
+          person_income?: number | null
+          person_emp_length?: number | null
+          loan_int_rate?: number | null
+          loan_percent_income?: number | null
+          cb_person_cred_hist_length?: number | null
+          person_home_ownership?: string | null
+          loan_grade?: string | null
+          cb_person_default_on_file?: string | null
+          customer_id?: string | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }

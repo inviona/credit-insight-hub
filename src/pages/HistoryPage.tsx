@@ -112,16 +112,28 @@ export default function HistoryPage() {
   };
 
   const getRiskScore = (app: LoanApplication): number => {
-    if (app.loan_int_rate) return Math.min(Math.round(app.loan_int_rate * 3), 99);
-    if (app.credit_score) {
-      if (app.credit_score >= 700) return Math.round(10 + Math.random() * 20);
-      if (app.credit_score >= 600) return Math.round(30 + Math.random() * 30);
-      return Math.round(60 + Math.random() * 30);
-    }
-    const status = (app.status || "").toLowerCase();
-    if (status === "approved") return Math.round(10 + Math.random() * 30);
-    if (status === "rejected") return Math.round(60 + Math.random() * 35);
-    return Math.round(30 + Math.random() * 40);
+    const annualIncome = app.person_income || 0;
+    const loanAmount = app.loan_amount || 0;
+    const monthlyExpenses = app.monthly_expenses || 0;
+    const existingDebt = app.existing_debt || 0;
+    const yearsEmployed = app.person_emp_length || 0;
+    const empStatus = (app.employment_status || "").toLowerCase();
+    const hasDefaults = (app.cb_person_default_on_file || "").toUpperCase() === "Y";
+
+    if (annualIncome <= 0) return 50;
+
+    const dti = (monthlyExpenses + existingDebt) / annualIncome * 12;
+    const lti = loanAmount / annualIncome;
+
+    let score = 50;
+    score -= dti * 25;
+    score -= lti * 15;
+    if (hasDefaults) score -= 15;
+    if (yearsEmployed >= 2) score += 5;
+    if (empStatus === "full_time" || empStatus === "self_employed") score += 5;
+    if (empStatus === "unemployed") score -= 15;
+
+    return Math.max(0, Math.min(99, Math.round(score * 10) / 10));
   };
 
   const getRiskLevel = (score: number): string => {
@@ -218,7 +230,7 @@ export default function HistoryPage() {
       {
         name: score > 50 ? "High Debt-to-Income Ratio" : "Loan-to-Income Ratio",
         value: ratio !== "N/A" ? `${ratio}%` : "N/A",
-        impact: Math.min(score + Math.random() * 15, 95),
+        impact: Math.min(score + (score * 0.15), 95),
         negative: score > 50
       },
       {
@@ -228,10 +240,10 @@ export default function HistoryPage() {
         negative: income < 50000
       },
       {
-        name: age > 0 && age < 25 ? "Limited Credit History (Young Age)" : app.credit_score ? "Credit Score Assessment" : "Mature Credit Profile",
-        value: age > 0 ? `${age} years` : (app.credit_score ? `${app.credit_score}` : "N/A"),
-        impact: (age > 0 && age < 25) ? 58 : (app.credit_score ? (app.credit_score < 600 ? 65 : 20) : 20),
-        negative: (age > 0 && age < 25) || (app.credit_score !== null && app.credit_score < 600)
+        name: age > 0 && age < 25 ? "Limited Credit History (Young Age)" : "Employment Stability",
+        value: age > 0 ? `${age} years` : "N/A",
+        impact: (age > 0 && age < 25) ? 58 : ((app.person_emp_length || 0) < 1 ? 45 : 20),
+        negative: (age > 0 && age < 25) || ((app.person_emp_length || 0) < 1)
       }
     ].sort((a, b) => b.impact - a.impact).slice(0, 3);
     

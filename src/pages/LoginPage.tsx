@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield } from "lucide-react";
+import { Shield, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { TopNavbar } from "@/components/TopNavbar";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -49,47 +50,53 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-sm border-border">
-        <CardHeader className="text-center space-y-2">
-          <div className="flex justify-center">
-            <Shield className="h-8 w-8 text-primary" />
-          </div>
-          <CardTitle className="text-xl">Sign In</CardTitle>
-          <CardDescription>Access Credit Predictor dashboard</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                value={email} 
-                onChange={(e) => setEmail(e.target.value)} 
-                placeholder="analyst@bank.com" 
-              />
+    <div className="min-h-screen bg-background">
+      <TopNavbar />
+      <div className="flex items-center justify-center px-4 py-20">
+        <Card className="w-full max-w-sm border-border">
+          <CardHeader className="text-center space-y-2">
+            <div className="flex justify-center mb-4">
+              <Button variant="ghost" size="icon" className="absolute left-4" onClick={() => navigate(-1)} title="Go back">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <Shield className="h-8 w-8 text-primary" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)} 
-                placeholder="••••••••" 
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign In"}
-            </Button>
-          </form>
-          <p className="text-center text-xs text-muted-foreground mt-4">
-            Don't have an account?{" "}
-            <Link to="/register" className="text-primary hover:underline">Create one</Link>
-          </p>
-        </CardContent>
-      </Card>
+            <CardTitle className="text-xl">Sign In</CardTitle>
+            <CardDescription>Access Credit Predictor dashboard</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={email} 
+                  onChange={(e) => setEmail(e.target.value)} 
+                  placeholder="analyst@bank.com" 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)} 
+                  placeholder="••••••••" 
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "Signing in…" : "Sign In"}
+              </Button>
+            </form>
+            <p className="text-center text-xs text-muted-foreground mt-4">
+              Don't have an account?{" "}
+              <Link to="/register" className="text-primary hover:underline">Create one</Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

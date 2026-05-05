@@ -409,17 +409,22 @@ export default function LandingPage() {
                 <Button variant="outline" size="lg" className="h-14 px-8 text-base border-white/20 bg-white/5 hover:bg-white/10 text-white backdrop-blur-sm gap-2">
                   <Play className="h-5 w-5" /> View Demo
                 </Button>
+                <Link to="/personal">
+                  <Button variant="secondary" size="lg" className="h-14 px-8 text-base gap-2">
+                    Free individual try <ArrowRight className="h-5 w-5" />
+                  </Button>
+                </Link>
               </div>
               
               <div className="flex items-center gap-6 pt-8 border-t border-white/10">
                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold text-white">99.9%</span>
-                    <span className="text-xs text-slate-400 uppercase tracking-wider">Uptime</span>
+                    <span className="text-2xl font-bold text-white">Speed</span>
+                    <span className="text-xs text-slate-400 uppercase tracking-wider">Efficient</span>
                  </div>
                  <div className="h-10 w-px bg-white/10" />
                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold text-white">&lt;200ms</span>
-                    <span className="text-xs text-slate-400 uppercase tracking-wider">API Latency</span>
+                    <span className="text-2xl font-bold text-white">Inovative</span>
+                    <span className="text-xs text-slate-400 uppercase tracking-wider">Automatic</span>
                  </div>
                  <div className="h-10 w-px bg-white/10" />
                  <div className="flex flex-col">

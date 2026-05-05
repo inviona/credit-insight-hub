@@ -13,6 +13,7 @@ import DashboardPage from "./pages/DashboardPage";
 import AssessmentPage from "./pages/AssessmentPage";
 import BatchPage from "./pages/BatchPage";
 import HistoryPage from "./pages/HistoryPage";
+import PersonalPage from "./pages/PersonalPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/personal" element={<PersonalPage />} />
             <Route
               path="/dashboard"
               element={

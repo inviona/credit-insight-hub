@@ -1,4 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
+import {
+  buildPrecheckFeedback,
+  calculateHeuristicScore,
+  personalPrecheckSchema,
+  type PersonalPrecheckInput,
+  type PersonalPrecheckResult,
+} from "@/lib/personal-precheck-schema";
 
 // API helper — legacy endpoints can point to an external Flask backend via VITE_API_URL.
 // Batch prediction uses a Lovable Cloud backend function by default.
@@ -64,4 +71,29 @@ export async function submitBatch(file: File) {
 export async function healthCheck() {
   const res = await apiFetch("/health");
   return res.json();
+}
+
+function normalizeEdgeScore(edgeData: unknown): number | null {
+  if (!edgeData || typeof edgeData !== "object") return null;
+  const scoreCandidate =
+    (edgeData as { score?: unknown }).score ??
+    (edgeData as { probability?: unknown }).probability ??
+    (edgeData as { approval_score?: unknown }).approval_score;
+  if (typeof scoreCandidate === "number" && Number.isFinite(scoreCandidate)) {
+    return scoreCandidate <= 1 ? Math.round(scoreCandidate * 100) : Math.round(scoreCandidate);
+  }
+  return null;
+}
+
+export async function runPersonalPrecheck(rawInput: unknown): Promise<{
+  parsedInput: PersonalPrecheckInput;
+  result: PersonalPrecheckResult;
+}> {
+  const parsedInput = personalPrecheckSchema.parse(rawInput);
+  const score = calculateHeuristicScore(parsedInput);
+
+  return {
+    parsedInput,
+    result: buildPrecheckFeedback(parsedInput, score),
+  };
 }

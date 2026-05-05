@@ -1,17 +1,27 @@
 # Credit Risk Intelligent Predictor
 
-A credit risk assessment and prediction platform built with React, TypeScript, and Supabase.
+A modern credit risk assessment and prediction platform that leverages machine learning to help financial institutions make data-driven lending decisions. Built with React, TypeScript, and Supabase.
+
+## Features
+
+- **Individual Risk Assessment**: Evaluate credit risk for individual loan applications
+- **Batch Processing**: Upload CSV files for bulk credit risk predictions
+- **Interactive Dashboard**: Visualize risk metrics, KPIs, and trends with Recharts
+- **Assessment History**: Track and review past credit assessments
+- **Secure Authentication**: User management with Supabase Auth
+- **Responsive Design**: Modern UI built with Tailwind CSS and shadcn/ui
 
 ## Tech Stack
 
 - **Frontend Framework**: React 18 + TypeScript + Vite
 - **Styling**: Tailwind CSS + shadcn/ui (Radix UI primitives)
 - **Routing**: React Router v6
-- **State Management**: React Context + React Query
-- **Database/Auth**: Supabase
+- **State Management**: React Context + React Query (TanStack Query)
+- **Database/Auth**: Supabase (PostgreSQL + Auth + Real-time)
 - **Charts**: Recharts
-- **Form Handling**: React Hook Form + Zod
-- **Testing**: Vitest
+- **Form Handling**: React Hook Form + Zod validation
+- **Testing**: Vitest + React Testing Library
+- **Backend**: Flask API for ML predictions (Python)
 
 ## Software Architecture
 
@@ -80,24 +90,97 @@ App (Root)
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js 18+ and npm
+- Supabase account and project
+- Python 3.8+ (for Flask backend, if running locally)
+
+### Installation
+
 ```bash
+# Clone the repository
+git clone <repository-url>
+cd credit-insight-hub
+
 # Install dependencies
 npm install
+```
 
+### Environment Setup
+
+Create a `.env` file in the root directory:
+
+```env
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
+VITE_API_URL=http://localhost:5000  # Flask API URL (optional)
+```
+
+### Development
+
+```bash
 # Start development server
 npm run dev
 
+# Run tests
+npm test
+
+# Run tests with UI
+npm run test:ui
+
+# Lint code
+npm run lint
+```
+
+### Production
+
+```bash
 # Build for production
 npm run build
 
-# Run tests
-npm test
+# Preview production build
+npm run preview
 ```
 
-## Environment Variables
+## Project Structure
 
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_PUBLISHABLE_KEY=your_supabase_key
-VITE_API_URL=your_flask_api_url  # optional
 ```
+credit-insight-hub/
+├── src/
+│   ├── components/     # UI components
+│   ├── contexts/       # React contexts
+│   ├── hooks/          # Custom hooks
+│   ├── integrations/   # Third-party integrations
+│   ├── lib/            # Utilities
+│   ├── pages/          # Page components
+│   └── App.tsx         # Root component
+├── public/             # Static assets
+├── supabase/           # Supabase config and migrations
+├── .env.example        # Environment variables example
+├── .gitignore          # Git ignore rules
+├── package.json        # Dependencies
+├── tsconfig.json       # TypeScript config
+├── vite.config.ts      # Vite config
+└── README.md           # This file
+```
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [shadcn/ui](https://ui.shadcn.com/) for the beautiful component library
+- [Supabase](https://supabase.com/) for the backend infrastructure
+- [Recharts](https://recharts.org/) for the charting library

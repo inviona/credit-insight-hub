@@ -17,29 +17,62 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.swo
+
+# Environment variables
 .env
+.env.*
+!.env.example
 
 # Bun
 bun.lockb
 
 # Coverage
 coverage
+*.lcov
 
 # Testing
 .vitest
+coverage/
 
 # Python
-__pycache__
+__pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
 .python-version
-venv
-.env.*
+venv/
+ENV/
+env/
+
+# Build artifacts
+*.tsbuildinfo
+*.map
 
 # Misc
-*.tsbuildinfo
+*.tgz
+*.tar.gz
+
+# Supabase
 supabase/.temp
+.supabase/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Temporary files
+*.tmp
+*.temp
+.temp/
+.tmp/

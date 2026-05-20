@@ -13,6 +13,7 @@ import DashboardPage from "./pages/DashboardPage";
 import AssessmentPage from "./pages/AssessmentPage";
 import BatchPage from "./pages/BatchPage";
 import HistoryPage from "./pages/HistoryPage";
+import ManualReviewPage from "./pages/ManualReviewPage";
 import PersonalPage from "./pages/PersonalPage";
 import NotFound from "./pages/NotFound";
 
@@ -60,6 +61,14 @@ const App = () => (
               element={
                 <AuthGuard>
                   <HistoryPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/manual-review"
+              element={
+                <AuthGuard>
+                  <ManualReviewPage />
                 </AuthGuard>
               }
             />

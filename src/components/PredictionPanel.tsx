@@ -1,4 +1,4 @@
-import { X, CheckCircle2, XCircle, AlertTriangle, Copy } from "lucide-react";
+import { X, CheckCircle2, XCircle, AlertTriangle, Copy, ClipboardList } from "lucide-react";
 import { ShapChart } from "./ShapChart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,9 +8,11 @@ import type { PredictionResult } from "@/lib/mock-data";
 interface PredictionPanelProps {
   result: PredictionResult;
   onClose: () => void;
+  onAddToManualReview?: () => void;
+  saving?: boolean;
 }
 
-export function PredictionPanel({ result, onClose }: PredictionPanelProps) {
+export function PredictionPanel({ result, onClose, onAddToManualReview, saving }: PredictionPanelProps) {
   const isApproved = result.decision === "APPROVED";
 
   const riskColor = {
@@ -109,6 +111,21 @@ export function PredictionPanel({ result, onClose }: PredictionPanelProps) {
             <p className="text-xs text-muted-foreground mt-1">
               Loan rate significantly exceeds current market rate — borrower may refinance early.
             </p>
+          </div>
+        )}
+
+        {/* Add to Manual Review */}
+        {onAddToManualReview && (
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              className="w-full gap-2 border-primary/40 text-primary hover:bg-primary/5"
+              onClick={onAddToManualReview}
+              disabled={saving}
+            >
+              <ClipboardList className="h-4 w-4" />
+              {saving ? "Adding…" : "Add to Manual Review"}
+            </Button>
           </div>
         )}
       </div>

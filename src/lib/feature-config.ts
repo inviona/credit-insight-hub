@@ -84,9 +84,9 @@ export const FORM_SECTIONS: { title: string; icon: string; fields: FormField[] }
     fields: [
       { name: "AMT_INCOME_TOTAL", label: "Annual Income ($)", type: "number", placeholder: "e.g. 75000", required: true, min: 0, step: 1000 },
       { name: "AMT_CREDIT", label: "Loan Amount ($)", type: "number", placeholder: "e.g. 250000", required: true, min: 0, step: 1000 },
-      { name: "INTEREST_RATE", label: "Interest Rate (%)", type: "number", placeholder: "e.g. 5.5", min: 0, max: 30, step: 0.1 },
+      { name: "INTEREST_RATE", label: "Interest Rate (%)", type: "number", placeholder: "e.g. 5.5", min: 0, max: 30, step: 0.01 },
       { name: "TERM_MONTHS", label: "Loan Term (months)", type: "number", placeholder: "e.g. 360", min: 1, max: 600 },
-      { name: "AMT_ANNUITY", label: "Monthly Payment ($)", type: "number", placeholder: "Auto-calculated or enter manually", min: 0 },
+      { name: "AMT_ANNUITY", label: "Monthly Payment ($)", type: "number", placeholder: "Auto-calculated or enter manually", min: 0, step: 1 },
       { name: "AMT_GOODS_PRICE", label: "Goods / Collateral Price ($)", type: "number", placeholder: "e.g. 220000", min: 0, step: 1000 },
     ],
   },

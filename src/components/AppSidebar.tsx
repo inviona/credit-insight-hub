@@ -1,4 +1,4 @@
-import { LayoutDashboard, FilePlus, Upload, History, Settings, LogOut, Shield } from "lucide-react";
+import { LayoutDashboard, FilePlus, Upload, History, Settings, LogOut, Shield, ClipboardList } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,7 @@ import {
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "All Applications", url: "/history", icon: History },
+  { title: "Manual Review", url: "/manual-review", icon: ClipboardList },
   { title: "New Assessment", url: "/assess", icon: FilePlus },
   { title: "Batch Upload", url: "/batch", icon: Upload },
   { title: "Settings", url: "/settings", icon: Settings },

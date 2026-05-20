@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { ChartModal } from "@/components/ChartModal";
-import { fetchCurrentInterestRates, generateHistoricalRates, InterestRateData } from "@/lib/interest-rate-api";
+import { fetchEuriborRates, type EuriborData } from "@/lib/euribor-api";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -72,7 +72,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentRates, setCurrentRates] = useState<InterestRateData | null>(null);
+  const [euriborData, setEuriborData] = useState<EuriborData[]>([]);
   const [selectedChart, setSelectedChart] = useState<{
     title: string;
     description: string;
@@ -83,7 +83,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchApplications();
-    fetchCurrentInterestRates().then(setCurrentRates);
+    fetchEuriborRates().then(setEuriborData);
   }, []);
 
   const fetchApplications = async () => {
@@ -181,8 +181,6 @@ export default function DashboardPage() {
     ].filter(d => d.value > 0);
   }, [applications]);
 
-  const historicalRates = useMemo(() => generateHistoricalRates(12), []);
-
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
@@ -212,7 +210,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
                     <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                     <Bar dataKey="approved" fill={COLORS[0]} name="Approved" />
                     <Bar dataKey="rejected" fill={COLORS[3]} name="Rejected" />
                   </BarChart>
@@ -237,7 +235,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
                     <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                     <Line type="monotone" dataKey="approved" stroke={COLORS[0]} strokeWidth={2} name="Approved" />
                     <Line type="monotone" dataKey="rejected" stroke={COLORS[3]} strokeWidth={2} name="Rejected" />
                   </LineChart>
@@ -267,7 +265,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
                     <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                     <Area type="monotone" dataKey="el" stroke={COLORS[2]} fill="url(#gEL)" strokeWidth={2} name="Risk Score %" />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -291,7 +289,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
                     <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                     <Bar dataKey="alerts" fill={COLORS[3]} name="Manual Review Required" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -302,25 +300,25 @@ export default function DashboardPage() {
 
         {/* Charts Row 1 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Macro Environment Chart */}
+          {/* EURIBOR Rates Chart */}
           <Card
             className="lg:col-span-2 cursor-pointer transition-all hover:border-primary/50"
             onClick={() => setSelectedChart({
-              title: "Macro Environment vs. Portfolio Yield",
-              description: "Benchmark interest rates compared to portfolio performance over the last year",
-              trend: "up",
-              analysis: `This chart compares your portfolio's average yield against key macroeconomic benchmarks:\n\n• **US Prime Rate** (${currentRates?.usPrimeRate}%): The baseline rate for most consumer and commercial loans\n• **Federal Funds Rate** (${currentRates?.federalFundsRate}%): The Fed's target rate\n• **Portfolio Average Yield** (${currentRates?.portfolioYield}%): Your weighted average return\n\nThe gradual upward trend in benchmark rates has been successfully passed through to borrowers, preserving net interest margin (NIM) and profitability.`,
+              title: "EURIBOR Rates vs. Portfolio Yield",
+              description: "3-Month and 12-Month EURIBOR benchmarks compared to portfolio performance",
+              trend: euriborData.length > 1 && euriborData[euriborData.length - 1].euribor3m > euriborData[0].euribor3m ? "up" : "down",
+              analysis: `This chart tracks key EURIBOR rates that serve as the primary benchmark for loan pricing:\n\n• **EURIBOR 3M** (${euriborData.length > 0 ? euriborData[euriborData.length - 1].euribor3m.toFixed(2) : "—"}%): The main short-term interbank rate used for floating-rate loans\n• **EURIBOR 12M** (${euriborData.length > 0 ? euriborData[euriborData.length - 1].euribor12m.toFixed(2) : "—"}%): The benchmark for longer-term lending products\n• **Portfolio Avg Yield** (${euriborData.length > 0 ? euriborData[euriborData.length - 1].portfolioYield.toFixed(2) : "—"}%): Your weighted average return on loans\n\nThe spread between your portfolio yield and EURIBOR represents your net interest margin (NIM). A stable or widening spread indicates effective pass-through of benchmark rates to borrowers.`,
               chart: (
                 <ResponsiveContainer width="100%" height={350}>
-                  <AreaChart data={historicalRates}>
+                  <AreaChart data={euriborData}>
                     <defs>
-                      <linearGradient id="gPrime" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#64748B" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#64748B" stopOpacity={0} />
+                      <linearGradient id="gEur3m" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                       </linearGradient>
-                      <linearGradient id="gFed" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#94A3B8" stopOpacity={0} />
+                      <linearGradient id="gEur12m" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="gPortfolio" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={COLORS[0]} stopOpacity={0.4} />
@@ -328,43 +326,43 @@ export default function DashboardPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} tickFormatter={(v: string) => v.slice(5, 7) + "/" + v.slice(2, 4)} />
-                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} domain={[0, 10]} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
-                    <Area type="monotone" dataKey="usPrimeRate" stroke="#64748B" fill="url(#gPrime)" strokeWidth={1.5} name="US Prime Rate" />
-                    <Area type="monotone" dataKey="federalFundsRate" stroke="#94A3B8" fill="url(#gFed)" strokeWidth={1.5} name="Federal Funds Rate (EFFR)" />
-                    <Area type="monotone" dataKey="portfolioYield" stroke={COLORS[0]} fill="url(#gPortfolio)" strokeWidth={2.5} name="Your Portfolio Avg Yield" />
+                    <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} tickFormatter={(v: string) => v.slice(5) + "/" + v.slice(2, 4)} />
+                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} domain={[0, "auto"]} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
+                    <Area type="monotone" dataKey="euribor3m" stroke="#3B82F6" fill="url(#gEur3m)" strokeWidth={2} name="EURIBOR 3M" />
+                    <Area type="monotone" dataKey="euribor12m" stroke="#8B5CF6" fill="url(#gEur12m)" strokeWidth={1.5} name="EURIBOR 12M" />
+                    <Area type="monotone" dataKey="portfolioYield" stroke={COLORS[0]} fill="url(#gPortfolio)" strokeWidth={2.5} name="Portfolio Avg Yield" />
                   </AreaChart>
                 </ResponsiveContainer>
               )
             })}
           >
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Macro Environment vs. Portfolio Yield</CardTitle>
-              <CardDescription>Interest rate benchmarks over the last year</CardDescription>
+              <CardTitle className="text-base">EURIBOR Rates vs. Portfolio Yield</CardTitle>
+              <CardDescription>ECB data — 3M and 12M EURIBOR benchmarks</CardDescription>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={historicalRates}>
+                <AreaChart data={euriborData}>
                   <defs>
-                    <linearGradient id="gPrimeSmall" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#64748B" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#64748B" stopOpacity={0} />
+                    <linearGradient id="gEur3mSmall" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
                     </linearGradient>
-                    <linearGradient id="gFedSmall" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#94A3B8" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#94A3B8" stopOpacity={0} />
+                    <linearGradient id="gEur12mSmall" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gPortfolioSmall" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor={COLORS[0]} stopOpacity={0.4} />
                       <stop offset="95%" stopColor={COLORS[0]} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} tickFormatter={(v: string) => v.slice(5, 7)} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} axisLine={false} tickLine={false} domain={[0, 10]} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 10 }} />
-                  <Area type="monotone" dataKey="usPrimeRate" stroke="#64748B" fill="url(#gPrimeSmall)" strokeWidth={1} name="US Prime" />
-                  <Area type="monotone" dataKey="federalFundsRate" stroke="#94A3B8" fill="url(#gFedSmall)" strokeWidth={1} name="Fed Funds (EFFR)" />
+                  <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} tickFormatter={(v: string) => v.slice(5)} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 9 }} axisLine={false} tickLine={false} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 10 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
+                  <Area type="monotone" dataKey="euribor3m" stroke="#3B82F6" fill="url(#gEur3mSmall)" strokeWidth={1.5} name="EURIBOR 3M" />
+                  <Area type="monotone" dataKey="euribor12m" stroke="#8B5CF6" fill="url(#gEur12mSmall)" strokeWidth={1} name="EURIBOR 12M" />
                   <Area type="monotone" dataKey="portfolioYield" stroke={COLORS[0]} fill="url(#gPortfolioSmall)" strokeWidth={2} name="Portfolio Yield" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -396,7 +394,7 @@ export default function DashboardPage() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                   </PieChart>
                 </ResponsiveContainer>
               )
@@ -423,7 +421,7 @@ export default function DashboardPage() {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 10 }} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 10 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -459,7 +457,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
                     <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                     <Area type="monotone" dataKey="approved" stroke={COLORS[0]} fill="url(#gApprovedLarge)" strokeWidth={2} name="Approved" />
                     <Area type="monotone" dataKey="rejected" stroke={COLORS[3]} fill="url(#gRejectedLarge)" strokeWidth={2} name="Rejected" />
                   </AreaChart>
@@ -490,7 +488,7 @@ export default function DashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} tickFormatter={(v: string) => v.slice(5)} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                   <Area type="monotone" dataKey="approved" stroke={COLORS[0]} fill="url(#gApproved)" strokeWidth={2} name="Approved" />
                   <Area type="monotone" dataKey="rejected" stroke={COLORS[3]} fill="url(#gRejected)" strokeWidth={2} name="Rejected" />
                 </AreaChart>
@@ -512,7 +510,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="period" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
                     <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                     <Bar dataKey="value" name="Count">
                       {delinquencyData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index]} />
@@ -534,7 +532,7 @@ export default function DashboardPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="period" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 10 }} axisLine={false} tickLine={false} />
-                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} />
+                    <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 11 }} itemStyle={{ color: "hsl(var(--foreground))" }} labelStyle={{ color: "hsl(var(--foreground))" }} />
                     <Bar dataKey="value" name="Count">
                       {delinquencyData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index]} />

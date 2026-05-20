@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PredictionPanel } from "@/components/PredictionPanel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { HelpCircle, Loader2, CheckCircle2 } from "lucide-react";
+import { HelpCircle, Loader2, CheckCircle2, TrendingUp } from "lucide-react";
 import { FORM_SECTIONS, calcAnnuity } from "@/lib/feature-config";
 import { generateMockPrediction, type PredictionResult } from "@/lib/mock-data";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { fetchEuriborRates, type EuriborData } from "@/lib/euribor-api";
 
 function generateCustomerId(): string {
   const timestamp = Date.now().toString(36).toUpperCase();
@@ -20,25 +21,70 @@ function generateCustomerId(): string {
   return `CUST-${timestamp}${random}`;
 }
 
+const INCOME_TO_EMPLOYMENT: Record<string, string | null> = {
+  Working: null,
+  "Commercial associate": "commercial_employee",
+  Pensioner: "retired",
+  "State servant": "civil_service",
+  Student: "student",
+};
+
+function mapIncomeToEmployment(value: string | undefined): string | null {
+  return value ? INCOME_TO_EMPLOYMENT[value] ?? null : null;
+}
+
 export default function AssessmentPage() {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [result, setResult] = useState<PredictionResult | null>(null);
+  const [savedLoanId, setSavedLoanId] = useState<string | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [euriborRates, setEuriborRates] = useState<EuriborData[]>([]);
+
+  useEffect(() => {
+    fetchEuriborRates().then(setEuriborRates);
+  }, []);
+
+  const latestEuribor = euriborRates.length > 0 ? euriborRates[euriborRates.length - 1] : null;
+
+  const handleAddToManualReview = useCallback(async () => {
+    if (!savedLoanId) return;
+    setReviewLoading(true);
+    const { error } = await supabase
+      .from('loan_applications')
+      .update({ status: 'pending_review' })
+      .eq('id', savedLoanId);
+    setReviewLoading(false);
+    if (error) {
+      toast({ title: "Error", description: "Failed to add to manual review", variant: "destructive" });
+    } else {
+      toast({ title: "Added to Manual Review", description: "Loan sent for manual underwriting review" });
+    }
+  }, [savedLoanId]);
 
   const updateField = useCallback((name: string, value: string) => {
     setFormData((prev) => {
       const next = { ...prev, [name]: value };
+
+      if (name === "TERM_MONTHS" && euriborRates.length > 0) {
+        const months = parseInt(value || "0", 10);
+        const latest = euriborRates[euriborRates.length - 1];
+        const baseRate = months <= 3 ? latest.euribor3m : latest.euribor12m;
+        const spread = 2.5;
+        next.INTEREST_RATE = (baseRate + spread).toFixed(2);
+      }
+
       if (["AMT_CREDIT", "INTEREST_RATE", "TERM_MONTHS"].includes(name)) {
         const principal = parseFloat(next.AMT_CREDIT || "0");
         const rate = parseFloat(next.INTEREST_RATE || "0");
         const months = parseInt(next.TERM_MONTHS || "0", 10);
         const annuity = calcAnnuity(principal, rate, months);
-        if (annuity > 0) next.AMT_ANNUITY = annuity.toFixed(2);
+        if (annuity > 0) next.AMT_ANNUITY = Math.round(annuity).toString();
       }
       return next;
     });
-  }, []);
+  }, [euriborRates]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +113,7 @@ export default function AssessmentPage() {
 
       if (user) {
         setSaving(true);
-        const { error: insertError } = await supabase
+        const { data: insertedLoan, error: insertError } = await supabase
           .from('loan_applications')
           .insert({
             customer_id: customerId,
@@ -89,9 +135,9 @@ export default function AssessmentPage() {
             loan_percent_income: formData.LOAN_PERCENT_INCOME ? parseFloat(formData.LOAN_PERCENT_INCOME) : null,
             person_home_ownership: formData.PERSON_HOME_OWNERSHIP || null,
             loan_grade: formData.LOAN_GRADE || null,
-            loan_purpose: formData.LOAN_PURPOSE || formData.NAME_INCOME_TYPE || null,
+            loan_purpose: formData.LOAN_PURPOSE || null,
             cb_person_default_on_file: formData.CB_PERSON_DEFAULT_ON_FILE || null,
-            employment_status: formData.EMPLOYMENT_STATUS || formData.NAME_INCOME_TYPE || null,
+            employment_status: formData.EMPLOYMENT_STATUS || mapIncomeToEmployment(formData.NAME_INCOME_TYPE),
             num_delinquencies: formData.NUM_DELINQUENCIES ? parseInt(formData.NUM_DELINQUENCIES) : null,
             status: prediction.decision === "APPROVED" ? "approved" : "rejected",
             date_of_birth: formData.DATE_OF_BIRTH || null,
@@ -100,15 +146,20 @@ export default function AssessmentPage() {
             state: formData.STATE || null,
             zip_code: formData.ZIP_CODE || null,
             bankruptcy_history: formData.BANKRUPTCY_HISTORY === "true" ? true : formData.BANKRUPTCY_HISTORY === "false" ? false : null,
-          });
+          })
+          .select('id')
+          .single();
 
         if (insertError) {
+          setSavedLoanId(null);
           console.error("Database insert error:", insertError);
           const msg = insertError.message || "Unknown error";
           const details = insertError.details || insertError.hint || "";
           toast({ title: "Warning", description: `Could not save to database: ${msg}${details ? ` (${details})` : ""}`, variant: "destructive" });
         } else {
-        toast({ title: "Assessment saved", description: `Customer ID: ${customerId}` });
+          setSavedLoanId(insertedLoan?.id || null);
+          toast({ title: "Assessment saved", description: `Customer ID: ${customerId}` });
+        }
       }
 
       setResult(prediction);
@@ -119,7 +170,7 @@ export default function AssessmentPage() {
       setLoading(false);
       setSaving(false);
     }
-  };
+  }
 
   return (
     <DashboardLayout>
@@ -128,6 +179,19 @@ export default function AssessmentPage() {
           <h1 className="text-2xl font-bold text-foreground">New Credit Assessment</h1>
           <p className="text-sm text-muted-foreground">Enter applicant data to run risk prediction</p>
         </div>
+
+        {latestEuribor && (
+          <div className="bg-muted/40 border border-border rounded-lg p-3 flex items-center gap-3 text-sm">
+            <TrendingUp className="h-5 w-5 text-primary shrink-0" />
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              <span><strong>EURIBOR 3M:</strong> {latestEuribor.euribor3m.toFixed(2)}%</span>
+              <span><strong>EURIBOR 12M:</strong> {latestEuribor.euribor12m.toFixed(2)}%</span>
+              <span className="text-muted-foreground">
+                Auto-applies EURIBOR + 2.5% spread based on loan term (≤3mo → 3M, &gt;3mo → 12M)
+              </span>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <Accordion type="multiple" defaultValue={[FORM_SECTIONS[0].title]} className="space-y-3">
@@ -210,7 +274,14 @@ export default function AssessmentPage() {
         )}
       </div>
 
-      {result && <PredictionPanel result={result} onClose={() => setResult(null)} />}
+      {result && (
+        <PredictionPanel
+          result={result}
+          onClose={() => setResult(null)}
+          onAddToManualReview={savedLoanId ? handleAddToManualReview : undefined}
+          saving={reviewLoading}
+        />
+      )}
     </DashboardLayout>
   );
 }

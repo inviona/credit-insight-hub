@@ -46,9 +46,30 @@ export function ChartModal({ open, onOpenChange, title, description, analysis, c
                 <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
                   AI-Generated Analysis
                 </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {analysis}
-                </p>
+                <div className="text-sm text-muted-foreground leading-relaxed space-y-1">
+                  {analysis.split("\n").map((line, i) => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return null;
+                    const bulletMatch = trimmed.match(/^•\s+\*\*(.+?)\*\*(.+)?$/);
+                    if (bulletMatch) {
+                      return (
+                        <div key={i} className="flex gap-2">
+                          <span className="text-primary mt-1">•</span>
+                          <span><strong>{bulletMatch[1]}</strong>{bulletMatch[2] || ""}</span>
+                        </div>
+                      );
+                    }
+                    const boldParts = trimmed.split(/(\*\*.+?\*\*)/);
+                    return (
+                      <p key={i}>
+                        {boldParts.map((part, j) => {
+                          const bold = part.match(/^\*\*(.+?)\*\*$/);
+                          return bold ? <strong key={j}>{bold[1]}</strong> : part;
+                        })}
+                      </p>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>

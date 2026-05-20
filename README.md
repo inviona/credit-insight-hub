@@ -2,6 +2,28 @@
 
 A modern credit risk assessment and prediction platform that leverages machine learning to help financial institutions make data-driven lending decisions. Built with React, TypeScript, and Supabase.
 
+## Business Overview
+
+Credit Risk Intelligent Predictor is a comprehensive credit risk management platform designed for financial institutions, credit unions, and lending businesses. It streamlines the entire lending workflow — from individual loan assessment and bulk portfolio processing to ongoing portfolio monitoring and regulatory reporting.
+
+### Business Functionalities
+
+- **Single Loan Assessment** — Submit individual loan applications through a detailed 5-section form (core financials, applicant profile, credit scores, loan details, background). The ML engine returns a risk probability, approval decision, risk tier, policy recommendation, and SHAP-based explainability factors showing exactly what drove the decision.
+
+- **Batch CSV Processing** — Upload a CSV file with multiple loan applicants for bulk risk scoring. The system processes each record through the ML pipeline, displays results in a sortable table, and allows downloading the outcome as a CSV file.
+
+- **Portfolio Dashboard & Intelligence** — A real-time analytics dashboard with KPI cards (pipeline volume, approval rate, expected loss ratio, critical review alerts), portfolio quality breakdown by credit tier, decision trends over time, macro-economic overlay (prime rate comparison), and a recent applications table.
+
+- **Assessment History & Portfolio Ledger** — Full searchable history of all past assessments with multi-dimensional filtering (date range, income range, loan amount, risk score, decision status). Each record opens a detailed side panel showing contact information, financial profile, and key risk factors with impact breakdown.
+
+- **Personal Loan Pre-Check** — A self-service tool available to the general public (no login required) that lets individuals estimate their loan readiness. Uses a heuristic scoring algorithm to provide an eligibility band, score, and actionable recommendations.
+
+- **AI Financial Assistant** — An in-app chatbot powered by Mistral AI that answers questions about credit risk, financial markets, and banking — with insights tailored to the Albanian market.
+
+- **Geographical Risk Visualization** — An interactive map displaying credit risk scores across cities in Albania and Kosovo, color-coded by risk level for at-a-glance regional portfolio assessment.
+
+- **Secure Multi-Tenant Architecture** — Row-level security ensures each institution's data is isolated. User authentication via Supabase Auth with email/password registration and session management.
+
 ## Features
 
 - **Individual Risk Assessment**: Evaluate credit risk for individual loan applications

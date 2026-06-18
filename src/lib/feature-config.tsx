@@ -77,10 +77,13 @@ export interface FormField {
   step?: number;
 }
 
-export const FORM_SECTIONS: { title: string; icon: string; fields: FormField[] }[] = [
+import { Wallet, User, BarChart3, ClipboardList, Home } from "lucide-react";
+import type { ReactNode } from "react";
+
+export const FORM_SECTIONS: { title: string; icon: ReactNode; fields: FormField[] }[] = [
   {
     title: "Core Financials",
-    icon: "💰",
+    icon: <Wallet className="h-4 w-4" />,
     fields: [
       { name: "AMT_INCOME_TOTAL", label: "Annual Income ($)", type: "number", placeholder: "e.g. 75000", required: true, min: 0, step: 1000 },
       { name: "AMT_CREDIT", label: "Loan Amount ($)", type: "number", placeholder: "e.g. 250000", required: true, min: 0, step: 1000 },
@@ -92,7 +95,7 @@ export const FORM_SECTIONS: { title: string; icon: string; fields: FormField[] }
   },
   {
     title: "Applicant Profile",
-    icon: "👤",
+    icon: <User className="h-4 w-4" />,
     fields: [
       { name: "FULL_NAME", label: "Full Name", type: "text", placeholder: "e.g. John Doe", required: true },
       { name: "EMAIL", label: "Email", type: "text", placeholder: "e.g. john@example.com" },
@@ -106,7 +109,7 @@ export const FORM_SECTIONS: { title: string; icon: string; fields: FormField[] }
   },
   {
     title: "Credit Scores",
-    icon: "📊",
+    icon: <BarChart3 className="h-4 w-4" />,
     fields: [
       { name: "EXT_SOURCE_1", label: "FICO Score", type: "number", placeholder: "300–850 or 0–1", tooltip: "FICO credit score (300–850). Values 0–1 treated as normalized.", min: 0, max: 850, step: 1 },
       { name: "EXT_SOURCE_2", label: "Bureau / SCRA Score", type: "number", placeholder: "300–850 or 0–1", tooltip: "External bureau score (300–850). Values 0–1 treated as normalized.", min: 0, max: 850, step: 1 },
@@ -115,7 +118,7 @@ export const FORM_SECTIONS: { title: string; icon: string; fields: FormField[] }
   },
   {
     title: "Loan Details",
-    icon: "📋",
+    icon: <ClipboardList className="h-4 w-4" />,
     fields: [
       { name: "NAME_CONTRACT_TYPE", label: "Contract Type", type: "select", options: [{ value: "Cash loans", label: "Cash Loans" }, { value: "Revolving loans", label: "Revolving Loans" }] },
       { name: "FLAG_OWN_CAR", label: "Owns Car", type: "select", options: [{ value: "Y", label: "Yes" }, { value: "N", label: "No" }] },
@@ -125,7 +128,7 @@ export const FORM_SECTIONS: { title: string; icon: string; fields: FormField[] }
   },
   {
     title: "Background",
-    icon: "🏠",
+    icon: <Home className="h-4 w-4" />,
     fields: [
       { name: "NAME_INCOME_TYPE", label: "Income Type", type: "select", options: [
         { value: "Working", label: "Working" }, { value: "Commercial associate", label: "Commercial Associate" },

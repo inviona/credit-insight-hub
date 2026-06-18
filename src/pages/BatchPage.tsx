@@ -96,7 +96,7 @@ export default function BatchPage() {
       setProgress(70);
 
       // Step 5: Save all predictions to database
-      const applicationsToInsert = predictions.map((pred: any) => ({
+      const applicationsToInsert = predictions.map((pred: Record<string, unknown>) => ({
         user_id: user.id,
         full_name: pred.id ? `Applicant ${pred.id}` : (pred.applicant_name || pred.full_name || null),
         person_income: parseFloat(pred.amt_income_total || pred.AMT_INCOME_TOTAL || pred.person_income || pred.PERSON_INCOME || "0"),

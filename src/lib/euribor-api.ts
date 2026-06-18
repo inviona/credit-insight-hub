@@ -24,12 +24,17 @@ export async function fetchEuriborRates(): Promise<EuriborData[]> {
   }
 }
 
-function parseEuriborResponse(json3m: any, json12m: any): EuriborData[] {
+interface SdmxResponse {
+  dataSets: Array<{ series: Record<string, { observations: Record<string, [number]> }> }>;
+  structure: { dimensions: { observation: Array<{ values: Array<{ name: string }> }> } };
+}
+
+function parseEuriborResponse(json3m: SdmxResponse, json12m: SdmxResponse): EuriborData[] {
   const s3m = json3m.dataSets[0].series["0:0:0:0:0:0:0"];
   const s12m = json12m.dataSets[0].series["0:0:0:0:0:0:0"];
   const timeValues = json3m.structure.dimensions.observation[0].values;
 
-  return timeValues.map((tv: any, index: number) => {
+  return timeValues.map((tv: { name: string }, index: number) => {
     const obs3m = s3m.observations[index.toString()];
     const obs12m = s12m.observations[index.toString()];
     const rate3m = obs3m ? obs3m[0] : 0;

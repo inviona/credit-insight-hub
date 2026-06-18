@@ -38,10 +38,10 @@ export default function LoginPage() {
         toast({ title: "Success", description: "Logged in successfully!" });
         navigate("/dashboard");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Login Failed",
-        description: error.message || "Invalid email or password",
+        description: error instanceof Error ? error.message : "Invalid email or password",
         variant: "destructive",
       });
     } finally {

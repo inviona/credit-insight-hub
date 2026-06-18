@@ -49,10 +49,10 @@ export default function RegisterPage() {
         });
         navigate("/login");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Registration Failed",
-        description: error.message || "Could not create account",
+        description: error instanceof Error ? error.message : "Could not create account",
         variant: "destructive",
       });
     } finally {

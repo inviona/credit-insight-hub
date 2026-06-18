@@ -41,10 +41,10 @@ export function AppSidebar() {
       if (error) throw error;
       toast({ title: "Logged out", description: "You have been signed out successfully." });
       navigate("/login");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Error",
-        description: error.message || "Failed to log out",
+        description: error instanceof Error ? error.message : "Failed to log out",
         variant: "destructive",
       });
     }

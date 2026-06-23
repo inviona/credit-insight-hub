@@ -18,7 +18,7 @@ from typing import Optional
 import joblib
 import numpy as np
 import pandas as pd
-import shap
+import xgboost as xgb
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -43,32 +43,13 @@ except FileNotFoundError:
 # Global mean default rate from training data (≈8.1% for Home Credit)
 GLOBAL_MEAN = float(os.environ.get("GLOBAL_MEAN", "0.0807"))
 
-# Cached SHAP explainer
-_shap_explainer = None
-try:
-    _shap_explainer = shap.Explainer(xgb_model)
-except Exception:
-    pass
-if _shap_explainer is None:
-    try:
-        _shap_explainer = shap.TreeExplainer(xgb_model, model_output="probability", feature_perturbation="interventional")
-    except Exception:
-        pass
-if _shap_explainer is None:
-    try:
-        _shap_explainer = shap.TreeExplainer(xgb_model)
-    except Exception:
-        pass
-if _shap_explainer is None:
-    try:
-        booster = xgb_model.get_booster()
-        _shap_explainer = shap.Explainer(booster)
-    except Exception:
-        pass
+# XGBoost booster for SHAP (XGBoost 3.x has native SHAP support)
+_xgb_booster = xgb_model.get_booster()
+print(f"Booster loaded: {_xgb_booster is not None}, features: {_xgb_booster.num_features()}", flush=True)
 
-print(f"SHAP explainer loaded: {_shap_explainer is not None}", flush=True)
+print(f"SHAP: Using XGBoost native Tree SHAP", flush=True)
 print(f"Model type: {type(xgb_model).__name__}", flush=True)
-print(f"Features: {len(feat_cols)}, Threshold: {OPTIMAL_THRESHOLD}", flush=True)
+print(f"Booster features: {_xgb_booster.num_features()}, Features: {len(feat_cols)}, Threshold: {OPTIMAL_THRESHOLD}", flush=True)
 
 # ── Helpers (mirrored from notebook) ──────────────────────────────────────────
 
@@ -215,11 +196,18 @@ def predict_single(applicant: dict, threshold: float = 0.5, include_shap: bool =
         "policy": policy,
     }
 
-    # Add SHAP values if requested
-    if include_shap and _shap_explainer is not None:
+    # Add SHAP values using XGBoost's native Tree SHAP
+    if include_shap:
         try:
-            shap_vals = _shap_explainer.shap_values(X_transformed)
-            feature_importance = list(zip(feat_cols, shap_vals[0]))
+            dmatrix = xgb.DMatrix(X_transformed)
+            shap_contribs = _xgb_booster.predict(dmatrix, pred_contribs=True)
+            if shap_contribs.ndim == 3:
+                shap_row = shap_contribs[0, :, -1]
+            else:
+                shap_row = shap_contribs[0, :-1]
+            if len(shap_row) > len(feat_cols):
+                shap_row = shap_row[:len(feat_cols)]
+            feature_importance = list(zip(feat_cols, shap_row))
             feature_importance.sort(key=lambda x: abs(x[1]), reverse=True)
             risk_factors     = [(name, float(val)) for name, val in feature_importance if val > 0][:8]
             protect_factors  = [(name, float(val)) for name, val in feature_importance if val < 0][:8]
@@ -227,7 +215,8 @@ def predict_single(applicant: dict, threshold: float = 0.5, include_shap: bool =
                 "top_risk_factors": risk_factors,
                 "top_protect_factors": protect_factors,
             }
-        except Exception:
+        except Exception as shap_err:
+            print(f"SHAP computation error: {shap_err}", flush=True)
             result["shap_values"] = {"top_risk_factors": [], "top_protect_factors": []}
 
     return result

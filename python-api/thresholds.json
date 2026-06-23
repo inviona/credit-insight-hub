@@ -1,0 +1,7 @@
+{
+  "Logistic Regression": 0.6867,
+  "Decision Tree": 0.4585,
+  "Random Forest": 0.4356,
+  "XGBoost": 0.662,
+  "Neural Network": 0.6694
+}

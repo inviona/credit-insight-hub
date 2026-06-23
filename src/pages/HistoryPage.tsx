@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Calendar as CalendarIcon, Plus, Info, Loader2, SlidersHorizontal, X, TrendingUp, TrendingDown, ClipboardList } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Plus, Info, Loader2, SlidersHorizontal, X, TrendingUp, TrendingDown, ClipboardList, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
@@ -224,6 +224,34 @@ export default function HistoryPage() {
     return count;
   }, [dateFrom, dateTo, incomeMin, incomeMax, creditMin, creditMax, riskScoreMin, riskScoreMax, filter]);
 
+  const readableFeatureName = (name: string): string => {
+    const labels: Record<string, string> = {
+      CREDIT_TO_INCOME: "Loan-to-Income Ratio",
+      ANNUITY_TO_INCOME: "Monthly Payment Burden",
+      INCOME_PER_PERSON: "Income per Household Member",
+      YEARS_EMPLOYED: "Employment Stability (Years)",
+      AGE_YEARS: "Applicant Age",
+      YEARS_REGISTRATION: "Registration Length (Years)",
+      YEARS_ID_CHANGE: "Time Since ID Change",
+      EXT_MEAN: "Average External Credit Score",
+      EXT_SOURCE_1: "External Credit Source 1",
+      EXT_SOURCE_2: "External Credit Source 2",
+      EXT_SOURCE_3: "External Credit Source 3",
+      AMT_GOODS_PRICE: "Goods Price (Loan Purpose)",
+      AMT_CREDIT: "Credit Amount",
+      AMT_ANNUITY: "Annuity Amount",
+      AMT_INCOME_TOTAL: "Total Income",
+      DAYS_BIRTH: "Age (Days)",
+      DAYS_EMPLOYED: "Days Employed",
+      LOAN_TO_INCOME_RATIO: "Loan-to-Income Ratio",
+      OCCUPATION_TYPE: "Occupation Type",
+      EDUCATION_TYPE: "Education Level",
+      CODE_GENDER: "Gender",
+      DAYS_REGISTRATION: "Days Since Registration",
+    };
+    return labels[name] || name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
   const getRiskFactors = (app: LoanApplication) => {
     const income = app.person_income || 0;
     const loan = app.loan_amount || 0;
@@ -265,6 +293,20 @@ export default function HistoryPage() {
     } else {
       toast({ title: "Sent to Manual Review", description: "Application will be reviewed by a human" });
       setApplications((prev) => prev.map((a) => a.id === app.id ? { ...a, status: "pending_review" } : a));
+    }
+  };
+
+  const handleDelete = async (app: LoanApplication) => {
+    const { error } = await supabase
+      .from("loan_applications")
+      .delete()
+      .eq("id", app.id);
+    if (error) {
+      toast({ title: "Error", description: "Failed to delete application", variant: "destructive" });
+    } else {
+      toast({ title: "Deleted", description: "Application removed" });
+      setApplications((prev) => prev.filter((a) => a.id !== app.id));
+      setSelectedApplication(null);
     }
   };
 
@@ -671,15 +713,26 @@ export default function HistoryPage() {
                     </div>
                   )}
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                    onClick={() => handleSendToManualReview(selectedApplication)}
-                  >
-                    <ClipboardList className="h-4 w-4" />
-                    Send to Manual Review
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => handleSendToManualReview(selectedApplication)}
+                    >
+                      <ClipboardList className="h-4 w-4" />
+                      Send to Review
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => handleDelete(selectedApplication)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
 
                   {/* Financial Profile Section */}
                   <div className="space-y-4">
@@ -734,87 +787,91 @@ export default function HistoryPage() {
                     </div>
                   </div>
 
-                  {/* Model Explainability Section */}
+                  {/* Model Explainability — SHAP (real model explanation) */}
+                  {selectedApplication.shap_explanation && (() => {
+                    const shap = selectedApplication.shap_explanation as Record<string, unknown>;
+                    const riskFactors = (shap.top_risk_factors as [string, number][]) || [];
+                    const protectFactors = (shap.top_protect_factors as [string, number][]) || [];
+                    if (riskFactors.length === 0 && protectFactors.length === 0) return null;
+                    return (
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                          AI Model Explanation
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                          How the XGBoost model weighed each factor in its decision.
+                        </p>
+                        {riskFactors.length > 0 && (
+                          <div className="space-y-3">
+                            <p className="text-xs font-medium text-destructive flex items-center gap-1">
+                              <TrendingUp className="h-3.5 w-3.5" /> Top Risk Drivers
+                            </p>
+                            {riskFactors.slice(0, 5).map(([name, val], i) => (
+                              <div key={i} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-foreground">{readableFeatureName(name)}</span>
+                                  <span className="text-xs font-mono text-destructive">{val > 0 ? '+' : ''}{val.toFixed(4)}</span>
+                                </div>
+                                <Progress
+                                  value={Math.min(Math.abs(val) * 100, 100)}
+                                  className="h-2 bg-destructive/20"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {protectFactors.length > 0 && (
+                          <div className="space-y-3">
+                            <p className="text-xs font-medium text-success flex items-center gap-1">
+                              <TrendingDown className="h-3.5 w-3.5" /> Top Protective Factors
+                            </p>
+                            {protectFactors.slice(0, 5).map(([name, val], i) => (
+                              <div key={i} className="space-y-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-foreground">{readableFeatureName(name)}</span>
+                                  <span className="text-xs font-mono text-success">{val.toFixed(4)}</span>
+                                </div>
+                                <Progress
+                                  value={Math.min(Math.abs(val) * 100, 100)}
+                                  className="h-2 bg-success/20"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Business-Readable Risk Assessment */}
                   <div className="space-y-4">
                     <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                       Key Risk Factors
                     </h3>
-                    {selectedApplication.shap_explanation ? (
-                      <div className="space-y-4">
-                        {(() => {
-                          const shap = selectedApplication.shap_explanation as Record<string, unknown>;
-                          const riskFactors = (shap.top_risk_factors as [string, number][]) || [];
-                          const protectFactors = (shap.top_protect_factors as [string, number][]) || [];
-                          return (
-                            <>
-                              {riskFactors.length > 0 && (
-                                <div className="space-y-3">
-                                  <p className="text-xs font-medium text-destructive flex items-center gap-1">
-                                    <TrendingUp className="h-3.5 w-3.5" /> Risk Drivers
-                                  </p>
-                                  {riskFactors.slice(0, 5).map(([name, val], i) => (
-                                    <div key={i} className="space-y-1">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-sm text-foreground">{name}</span>
-                                        <span className="text-xs font-mono text-destructive">+{val.toFixed(4)}</span>
-                                      </div>
-                                      <Progress
-                                        value={Math.min(Math.abs(val) * 100, 100)}
-                                        className="h-2 bg-destructive/20"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {protectFactors.length > 0 && (
-                                <div className="space-y-3">
-                                  <p className="text-xs font-medium text-success flex items-center gap-1">
-                                    <TrendingDown className="h-3.5 w-3.5" /> Protective Factors
-                                  </p>
-                                  {protectFactors.slice(0, 5).map(([name, val], i) => (
-                                    <div key={i} className="space-y-1">
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-sm text-foreground">{name}</span>
-                                        <span className="text-xs font-mono text-success">{val.toFixed(4)}</span>
-                                      </div>
-                                      <Progress
-                                        value={Math.min(Math.abs(val) * 100, 100)}
-                                        className="h-2 bg-success/20"
-                                      />
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {getRiskFactors(selectedApplication).map((factor, index) => (
-                          <div key={index} className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-foreground">
-                                {factor.name}
-                              </span>
-                              <span className="text-xs font-mono text-muted-foreground">
-                                {factor.negative ? '+' : '-'}{factor.impact.toFixed(1)}%
-                              </span>
-                            </div>
-                            <div className="space-y-1">
-                              <Progress 
-                                value={factor.impact} 
-                                className={cn(
-                                  "h-2",
-                                  factor.negative ? "bg-destructive/20" : "bg-success/20"
-                                )}
-                              />
-                              <p className="text-xs text-muted-foreground">{factor.value}</p>
-                            </div>
+                    <div className="space-y-4">
+                      {getRiskFactors(selectedApplication).map((factor, index) => (
+                        <div key={index} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-foreground">
+                              {factor.name}
+                            </span>
+                            <span className="text-xs font-mono text-muted-foreground">
+                              {factor.negative ? '+' : '-'}{factor.impact.toFixed(1)}%
+                            </span>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                          <div className="space-y-1">
+                            <Progress 
+                              value={factor.impact} 
+                              className={cn(
+                                "h-2",
+                                factor.negative ? "bg-destructive/20" : "bg-success/20"
+                              )}
+                            />
+                            <p className="text-xs text-muted-foreground">{factor.value}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   </div>
                 </ScrollArea>

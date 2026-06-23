@@ -46,9 +46,14 @@ GLOBAL_MEAN = float(os.environ.get("GLOBAL_MEAN", "0.0807"))
 # Cached SHAP explainer
 _shap_explainer = None
 try:
-    _shap_explainer = shap.TreeExplainer(xgb_model, model_output="probability")
+    _shap_explainer = shap.Explainer(xgb_model)
 except Exception:
     pass
+if _shap_explainer is None:
+    try:
+        _shap_explainer = shap.TreeExplainer(xgb_model, model_output="probability", feature_perturbation="interventional")
+    except Exception:
+        pass
 if _shap_explainer is None:
     try:
         _shap_explainer = shap.TreeExplainer(xgb_model)
@@ -56,13 +61,8 @@ if _shap_explainer is None:
         pass
 if _shap_explainer is None:
     try:
-        inner = xgb_model.get_booster() if hasattr(xgb_model, "get_booster") else xgb_model
-        _shap_explainer = shap.TreeExplainer(inner, model_output="probability")
-    except Exception:
-        pass
-if _shap_explainer is None:
-    try:
-        _shap_explainer = shap.Explainer(xgb_model)
+        booster = xgb_model.get_booster()
+        _shap_explainer = shap.Explainer(booster)
     except Exception:
         pass
 

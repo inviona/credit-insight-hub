@@ -161,6 +161,10 @@ serve(async (req) => {
         default_risk_score: scorePct,
         confidence_level: confidence,
         prediction_result,
+        shap_info: apiResult.shap_values || {
+          top_risk_factors: [],
+          top_protect_factors: [],
+        },
       };
     });
 

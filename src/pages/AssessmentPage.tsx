@@ -140,6 +140,8 @@ export default function AssessmentPage() {
             employment_status: formData.EMPLOYMENT_STATUS || mapIncomeToEmployment(formData.NAME_INCOME_TYPE),
             num_delinquencies: formData.NUM_DELINQUENCIES ? parseInt(formData.NUM_DELINQUENCIES) : null,
             status: prediction.decision === "APPROVED" ? "approved" : "rejected",
+            risk_score: Math.round(prediction.raw_probability * 10000) / 100,
+            shap_explanation: prediction.shap_info || null,
             date_of_birth: formData.DATE_OF_BIRTH || null,
             address: formData.ADDRESS || null,
             city: formData.CITY || null,

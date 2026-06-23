@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Calendar as CalendarIcon, Plus, Info, Loader2, SlidersHorizontal, X } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Plus, Info, Loader2, SlidersHorizontal, X, TrendingUp, TrendingDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -51,6 +51,8 @@ type LoanApplication = {
   person_home_ownership: string | null;
   loan_grade: string | null;
   cb_person_default_on_file: string | null;
+  risk_score: number | null;
+  shap_explanation: Record<string, unknown> | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -112,6 +114,8 @@ export default function HistoryPage() {
   };
 
   const getRiskScore = (app: LoanApplication): number => {
+    if (app.risk_score != null) return app.risk_score;
+
     const annualIncome = app.person_income || 0;
     const loanAmount = app.loan_amount || 0;
     const monthlyExpenses = app.monthly_expenses || 0;
@@ -711,30 +715,82 @@ export default function HistoryPage() {
                     <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                       Key Risk Factors
                     </h3>
-                    <div className="space-y-4">
-                      {getRiskFactors(selectedApplication).map((factor, index) => (
-                        <div key={index} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium text-foreground">
-                              {factor.name}
-                            </span>
-                            <span className="text-xs font-mono text-muted-foreground">
-                              {factor.negative ? '+' : '-'}{factor.impact.toFixed(1)}%
-                            </span>
-                          </div>
-                          <div className="space-y-1">
-                            <Progress 
-                              value={factor.impact} 
-                              className={cn(
-                                "h-2",
-                                factor.negative ? "bg-destructive/20" : "bg-success/20"
+                    {selectedApplication.shap_explanation ? (
+                      <div className="space-y-4">
+                        {(() => {
+                          const shap = selectedApplication.shap_explanation as Record<string, unknown>;
+                          const riskFactors = (shap.top_risk_factors as [string, number][]) || [];
+                          const protectFactors = (shap.top_protect_factors as [string, number][]) || [];
+                          return (
+                            <>
+                              {riskFactors.length > 0 && (
+                                <div className="space-y-3">
+                                  <p className="text-xs font-medium text-destructive flex items-center gap-1">
+                                    <TrendingUp className="h-3.5 w-3.5" /> Risk Drivers
+                                  </p>
+                                  {riskFactors.slice(0, 5).map(([name, val], i) => (
+                                    <div key={i} className="space-y-1">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-sm text-foreground">{name}</span>
+                                        <span className="text-xs font-mono text-destructive">+{val.toFixed(4)}</span>
+                                      </div>
+                                      <Progress
+                                        value={Math.min(Math.abs(val) * 100, 100)}
+                                        className="h-2 bg-destructive/20"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
                               )}
-                            />
-                            <p className="text-xs text-muted-foreground">{factor.value}</p>
+                              {protectFactors.length > 0 && (
+                                <div className="space-y-3">
+                                  <p className="text-xs font-medium text-success flex items-center gap-1">
+                                    <TrendingDown className="h-3.5 w-3.5" /> Protective Factors
+                                  </p>
+                                  {protectFactors.slice(0, 5).map(([name, val], i) => (
+                                    <div key={i} className="space-y-1">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-sm text-foreground">{name}</span>
+                                        <span className="text-xs font-mono text-success">{val.toFixed(4)}</span>
+                                      </div>
+                                      <Progress
+                                        value={Math.min(Math.abs(val) * 100, 100)}
+                                        className="h-2 bg-success/20"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {getRiskFactors(selectedApplication).map((factor, index) => (
+                          <div key={index} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-foreground">
+                                {factor.name}
+                              </span>
+                              <span className="text-xs font-mono text-muted-foreground">
+                                {factor.negative ? '+' : '-'}{factor.impact.toFixed(1)}%
+                              </span>
+                            </div>
+                            <div className="space-y-1">
+                              <Progress 
+                                value={factor.impact} 
+                                className={cn(
+                                  "h-2",
+                                  factor.negative ? "bg-destructive/20" : "bg-success/20"
+                                )}
+                              />
+                              <p className="text-xs text-muted-foreground">{factor.value}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   </div>
                 </ScrollArea>

@@ -47,6 +47,8 @@ export type Database = {
           loan_grade: string | null
           cb_person_default_on_file: string | null
           customer_id: string | null
+          risk_score: number | null
+          shap_explanation: Json | null
           created_at: string | null
           updated_at: string | null
         }
@@ -84,6 +86,8 @@ export type Database = {
           loan_grade?: string | null
           cb_person_default_on_file?: string | null
           customer_id?: string | null
+          risk_score?: number | null
+          shap_explanation?: Json | null
           created_at?: string | null
           updated_at?: string | null
         }
@@ -121,6 +125,8 @@ export type Database = {
           loan_grade?: string | null
           cb_person_default_on_file?: string | null
           customer_id?: string | null
+          risk_score?: number | null
+          shap_explanation?: Json | null
           created_at?: string | null
           updated_at?: string | null
         }

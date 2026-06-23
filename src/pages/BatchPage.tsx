@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Download, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, FileText, Download, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,8 +11,18 @@ import { submitBatch } from "@/lib/api";
 import Papa from "papaparse";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { ShapChart } from "@/components/ShapChart";
+
+type ShapInfo = {
+  top_risk_factors: [string, number][];
+  top_protect_factors: [string, number][];
+};
 
 type PredictionResult = {
+  id?: number;
   applicant_name?: string;
   amt_income_total: number;
   amt_credit: number;
@@ -26,6 +36,7 @@ type PredictionResult = {
   default_risk_score: number;
   prediction_result: string;
   confidence_level?: number;
+  shap_info?: ShapInfo;
 };
 
 export default function BatchPage() {
@@ -35,6 +46,7 @@ export default function BatchPage() {
   const [dragOver, setDragOver] = useState(false);
   const [results, setResults] = useState<PredictionResult[]>([]);
   const [errorMsg, setErrorMsg] = useState("");
+  const [selectedResult, setSelectedResult] = useState<PredictionResult | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (f: File) => {
@@ -110,6 +122,8 @@ export default function BatchPage() {
         cb_person_cred_hist_length: pred.ext_source_3 || pred.EXT_SOURCE_3 || pred.cb_person_cred_hist_length || pred.CB_PERSON_CRED_HIST_LENGTH ? parseInt(pred.ext_source_3 || pred.EXT_SOURCE_3 || pred.cb_person_cred_hist_length || pred.CB_PERSON_CRED_HIST_LENGTH) : null,
         monthly_expenses: pred.amt_annuity || pred.AMT_ANNUITY || pred.monthly_expenses || pred.MONTHLY_EXPENSES ? parseFloat(pred.amt_annuity || pred.AMT_ANNUITY || pred.monthly_expenses || pred.MONTHLY_EXPENSES) : null,
         status: pred.prediction_result || pred.prediction || pred.status ? (pred.prediction_result || pred.prediction || pred.status).toLowerCase() : "pending",
+        risk_score: pred.default_risk_score != null ? parseFloat(pred.default_risk_score as string) : null,
+        shap_explanation: pred.shap_info || null,
       }));
 
       const { error: insertError } = await supabase
@@ -246,13 +260,17 @@ export default function BatchPage() {
                   </TableHeader>
                   <TableBody>
                     {results.map((result, idx) => (
-                      <TableRow key={idx}>
+                      <TableRow
+                        key={idx}
+                        className="cursor-pointer hover:bg-muted/30 transition-colors"
+                        onClick={() => setSelectedResult(result)}
+                      >
                         <TableCell className="font-medium">
                           {result.applicant_name || `Applicant ${idx + 1}`}
                         </TableCell>
                         <TableCell>${result.amt_income_total.toLocaleString()}</TableCell>
                         <TableCell>${result.amt_credit.toLocaleString()}</TableCell>
-                        <TableCell>{result.default_risk_score.toFixed(2)}%</TableCell>
+                        <TableCell className="font-mono font-medium">{result.default_risk_score.toFixed(2)}%</TableCell>
                         <TableCell>
                           <span className={cn(
                             "inline-flex px-2 py-1 rounded-full text-xs font-medium",
@@ -291,6 +309,110 @@ export default function BatchPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* SHAP Explanation Detail Panel */}
+      <Sheet open={!!selectedResult} onOpenChange={(open) => !open && setSelectedResult(null)}>
+        <SheetContent className="w-[40%] min-w-[500px] bg-card border-l-border p-0">
+          {selectedResult && (
+            <>
+              <SheetHeader className="space-y-4 px-6 pt-6 pb-4 border-b border-border">
+                <div className="space-y-2">
+                  <SheetTitle className="text-lg font-semibold">
+                    {selectedResult.applicant_name || `Applicant ID: ${selectedResult.id || "N/A"}`}
+                  </SheetTitle>
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant={selectedResult.prediction_result.toLowerCase() === "approved" ? "default" : "destructive"}
+                      className={cn(
+                        "font-medium px-3 py-1",
+                        selectedResult.prediction_result.toLowerCase() === "approved"
+                          ? "bg-success/15 text-success border-success/30"
+                          : "bg-destructive/15 text-destructive border-destructive/30"
+                      )}
+                    >
+                      {selectedResult.prediction_result}
+                    </Badge>
+                    <span className="text-sm font-mono text-muted-foreground">
+                      Risk Score: {selectedResult.default_risk_score.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+              </SheetHeader>
+
+              <ScrollArea className="h-[calc(100vh-8rem)] px-6 pb-6">
+                <div className="space-y-6 pt-6">
+                  {/* Financial Details */}
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                      Application Details
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground text-xs">Annual Income</p>
+                        <p className="font-mono font-medium">${selectedResult.amt_income_total.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Loan Amount</p>
+                        <p className="font-mono font-medium">${selectedResult.amt_credit.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground text-xs">Monthly Payment</p>
+                        <p className="font-mono font-medium">${selectedResult.amt_annuity.toLocaleString()}</p>
+                      </div>
+                      {selectedResult.age_years != null && (
+                        <div>
+                          <p className="text-muted-foreground text-xs">Age</p>
+                          <p className="font-mono font-medium">{selectedResult.age_years} years</p>
+                        </div>
+                      )}
+                      {selectedResult.years_employed != null && (
+                        <div>
+                          <p className="text-muted-foreground text-xs">Employment</p>
+                          <p className="font-mono font-medium">{selectedResult.years_employed} years</p>
+                        </div>
+                      )}
+                      {selectedResult.code_gender && (
+                        <div>
+                          <p className="text-muted-foreground text-xs">Gender</p>
+                          <p className="font-medium">{selectedResult.code_gender}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* SHAP Explanation */}
+                  {selectedResult.shap_info && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                        Model Explanation (SHAP)
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        SHAP values show how each factor influenced the XGBoost model's decision.
+                        Red bars <span className="text-destructive font-medium">increase</span> risk,
+                        green bars <span className="text-success font-medium">decrease</span> risk.
+                      </p>
+                      <ShapChart
+                        riskFactors={selectedResult.shap_info.top_risk_factors}
+                        protectFactors={selectedResult.shap_info.top_protect_factors}
+                        maxItems={8}
+                      />
+                    </div>
+                  )}
+
+                  {(!selectedResult.shap_info || (
+                    selectedResult.shap_info.top_risk_factors.length === 0 &&
+                    selectedResult.shap_info.top_protect_factors.length === 0
+                  )) && (
+                    <div className="text-sm text-muted-foreground text-center py-8">
+                      No SHAP explanation data available for this prediction.
+                    </div>
+                  )}
+                </div>
+              </ScrollArea>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </DashboardLayout>
   );
 }

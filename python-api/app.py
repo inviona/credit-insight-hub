@@ -44,10 +44,31 @@ except FileNotFoundError:
 GLOBAL_MEAN = float(os.environ.get("GLOBAL_MEAN", "0.0807"))
 
 # Cached SHAP explainer
+_shap_explainer = None
 try:
-    _shap_explainer = shap.TreeExplainer(xgb_model)
+    _shap_explainer = shap.TreeExplainer(xgb_model, model_output="probability")
 except Exception:
-    _shap_explainer = None
+    pass
+if _shap_explainer is None:
+    try:
+        _shap_explainer = shap.TreeExplainer(xgb_model)
+    except Exception:
+        pass
+if _shap_explainer is None:
+    try:
+        inner = xgb_model.get_booster() if hasattr(xgb_model, "get_booster") else xgb_model
+        _shap_explainer = shap.TreeExplainer(inner, model_output="probability")
+    except Exception:
+        pass
+if _shap_explainer is None:
+    try:
+        _shap_explainer = shap.Explainer(xgb_model)
+    except Exception:
+        pass
+
+print(f"SHAP explainer loaded: {_shap_explainer is not None}", flush=True)
+print(f"Model type: {type(xgb_model).__name__}", flush=True)
+print(f"Features: {len(feat_cols)}, Threshold: {OPTIMAL_THRESHOLD}", flush=True)
 
 # ── Helpers (mirrored from notebook) ──────────────────────────────────────────
 

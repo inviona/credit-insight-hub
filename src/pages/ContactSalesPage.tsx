@@ -47,9 +47,9 @@ export default function ContactSalesPage() {
         <nav className="border-b border-white/5 bg-[#0a0f1c]/50 backdrop-blur-xl sticky top-0 z-50">
           <div className="container mx-auto flex items-center justify-between h-16 px-6 lg:px-12">
             <Link to="/" className="flex items-center gap-3">
-              <img src="/fresh-logo.png" alt="Logo" className="h-10 object-contain" />
+              <img src="/new-updated-logo.png" alt="Logo" className="h-10 object-contain" />
               <span className="font-bold text-lg tracking-tight text-white">
-                Credit Risk Intelligent Predictor
+                Credit Risk Intelligent Analyst
               </span>
             </Link>
             <Link to="/">
@@ -92,9 +92,9 @@ export default function ContactSalesPage() {
       <nav className="border-b border-white/5 bg-[#0a0f1c]/50 backdrop-blur-xl sticky top-0 z-50">
         <div className="container mx-auto flex items-center justify-between h-16 px-6 lg:px-12">
           <Link to="/" className="flex items-center gap-3">
-            <img src="/fresh-logo.png" alt="Logo" className="h-10 object-contain" />
+            <img src="/new-updated-logo.png" alt="Logo" className="h-10 object-contain" />
             <span className="font-bold text-lg tracking-tight text-white">
-              Credit Risk Intelligent Predictor
+              Credit Risk Intelligent Analyst
             </span>
           </Link>
           <div className="hidden md:flex items-center gap-8">
@@ -140,7 +140,7 @@ export default function ContactSalesPage() {
                 </span>
               </h1>
               <p className="mt-4 text-slate-400 text-lg max-w-lg mx-auto">
-                Fill out the form below and we'll schedule a meeting to show you how Credit Risk Intelligent Predictor can transform your lending process.
+                Fill out the form below and we'll schedule a meeting to show you how Credit Risk Intelligent Analyst can transform your lending process.
               </p>
             </div>
 

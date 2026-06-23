@@ -56,10 +56,10 @@ export function AppSidebar() {
         {/* Logo */}
         <div className="px-4 py-5 border-b border-sidebar-border">
           <div className="flex items-center gap-2.5">
-            <img src="/fresh-logo.png" alt="Logo" className="h-7 object-contain shrink-0" />
+            <img src="/new-updated-logo.png" alt="Logo" className="h-7 object-contain shrink-0" />
             {!collapsed && (
               <div>
-                <h1 className="text-sm font-bold tracking-tight text-sidebar-foreground">Credit Predictor</h1>
+                <h1 className="text-sm font-bold tracking-tight text-sidebar-foreground">Credit Analyst</h1>
                 <p className="text-[10px] text-muted-foreground tracking-wide">RISK ASSESSMENT</p>
               </div>
             )}

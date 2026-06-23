@@ -6,9 +6,9 @@ export function TopNavbar() {
     <nav className="border-b border-border bg-card/50 backdrop-blur sticky top-0 z-50">
       <div className="container mx-auto flex items-center justify-between h-16 px-6">
         <Link to="/" className="flex items-center gap-3">
-          <img src="/fresh-logo.png" alt="Logo" className="h-8 object-contain" />
+          <img src="/new-updated-logo.png" alt="Logo" className="h-8 object-contain" />
           <span className="font-bold text-base tracking-tight">
-            Credit Risk Intelligent Predictor
+            Credit Risk Intelligent Analyst
           </span>
         </Link>
 

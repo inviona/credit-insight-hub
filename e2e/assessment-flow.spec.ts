@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Single Assessment Flow", () => {
   test("landing page loads and shows CTA", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("text=Credit Risk Intelligent Predictor")).toBeVisible();
+    await expect(page.locator("text=Credit Risk Intelligent Analyst")).toBeVisible();
   });
 
   test("login page has form fields", async ({ page }) => {

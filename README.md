@@ -1,10 +1,10 @@
-# Credit Risk Intelligent Predictor
+# Credit Risk Intelligent Analyst
 
 A modern credit risk assessment and prediction platform that leverages machine learning to help financial institutions make data-driven lending decisions. Built with React, TypeScript, and Supabase.
 
 ## Business Overview
 
-Credit Risk Intelligent Predictor is a comprehensive credit risk management platform designed for financial institutions, credit unions, and lending businesses. It streamlines the entire lending workflow — from individual loan assessment and bulk portfolio processing to ongoing portfolio monitoring and regulatory reporting.
+Credit Risk Intelligent Analyst is a comprehensive credit risk management platform designed for financial institutions, credit unions, and lending businesses. It streamlines the entire lending workflow — from individual loan assessment and bulk portfolio processing to ongoing portfolio monitoring and regulatory reporting.
 
 ### Business Functionalities
 

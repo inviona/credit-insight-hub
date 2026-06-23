@@ -12,8 +12,9 @@ import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { Search, Calendar as CalendarIcon, Plus, Info, Loader2, SlidersHorizontal, X, TrendingUp, TrendingDown } from "lucide-react";
+import { Search, Calendar as CalendarIcon, Plus, Info, Loader2, SlidersHorizontal, X, TrendingUp, TrendingDown, ClipboardList } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -252,6 +253,19 @@ export default function HistoryPage() {
     ].sort((a, b) => b.impact - a.impact).slice(0, 3);
     
     return factors;
+  };
+
+  const handleSendToManualReview = async (app: LoanApplication) => {
+    const { error } = await supabase
+      .from("loan_applications")
+      .update({ status: "pending_review" })
+      .eq("id", app.id);
+    if (error) {
+      toast({ title: "Error", description: "Failed to send to manual review", variant: "destructive" });
+    } else {
+      toast({ title: "Sent to Manual Review", description: "Application will be reviewed by a human" });
+      setApplications((prev) => prev.map((a) => a.id === app.id ? { ...a, status: "pending_review" } : a));
+    }
   };
 
   return (
@@ -656,6 +670,16 @@ export default function HistoryPage() {
                       </div>
                     </div>
                   )}
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={() => handleSendToManualReview(selectedApplication)}
+                  >
+                    <ClipboardList className="h-4 w-4" />
+                    Send to Manual Review
+                  </Button>
 
                   {/* Financial Profile Section */}
                   <div className="space-y-4">

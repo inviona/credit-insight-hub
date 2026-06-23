@@ -3,7 +3,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, FileText, Download, CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { Upload, FileText, Download, CheckCircle2, AlertCircle, Info, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +23,7 @@ type ShapInfo = {
 
 type PredictionResult = {
   id?: number;
+  _db_id?: string | null;
   applicant_name?: string;
   amt_income_total: number;
   amt_credit: number;
@@ -126,17 +127,24 @@ export default function BatchPage() {
         shap_explanation: pred.shap_info || null,
       }));
 
-      const { error: insertError } = await supabase
+      const { data: insertedRows, error: insertError } = await supabase
         .from('loan_applications')
-        .insert(applicationsToInsert);
+        .insert(applicationsToInsert)
+        .select('id');
 
       if (insertError) {
         console.error("Database insert error:", insertError);
         throw new Error(`Failed to save predictions: ${insertError.message}`);
       }
 
+      // Attach DB IDs to results so we can send to manual review
+      const resultsWithIds = predictions.map((pred: PredictionResult, idx: number) => ({
+        ...pred,
+        _db_id: insertedRows?.[idx]?.id || null,
+      }));
+
       setProgress(100);
-      setResults(predictions);
+      setResults(resultsWithIds);
       setStatus("done");
       
       toast({ 
@@ -153,6 +161,22 @@ export default function BatchPage() {
         description: error.message || "An error occurred", 
         variant: "destructive" 
       });
+    }
+  };
+
+  const handleSendToManualReview = async (result: PredictionResult) => {
+    if (!result._db_id) {
+      toast({ title: "Not saved yet", description: "This application hasn't been saved to the database", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase
+      .from("loan_applications")
+      .update({ status: "pending_review" })
+      .eq("id", result._db_id);
+    if (error) {
+      toast({ title: "Error", description: "Failed to send to manual review", variant: "destructive" });
+    } else {
+      toast({ title: "Sent to Manual Review", description: "Application will be reviewed by a human" });
     }
   };
 
@@ -342,6 +366,16 @@ export default function BatchPage() {
               <ScrollArea className="h-[calc(100vh-8rem)] px-6 pb-6">
                 <div className="space-y-6 pt-6">
                   {/* Financial Details */}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={() => handleSendToManualReview(selectedResult)}
+                  >
+                    <ClipboardList className="h-4 w-4" />
+                    Send to Manual Review
+                  </Button>
+
                   <div className="space-y-3">
                     <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
                       Application Details

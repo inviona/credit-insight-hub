@@ -34,22 +34,13 @@ export function AlbaniaNetworkMap() {
       <motion.img
         src="/albania-kosovo.png"
         alt="Albania and Kosovo digital risk network"
-        className="relative w-full h-auto object-contain select-none"
+        className="relative w-full h-auto object-contain select-none mix-blend-screen"
         style={{
-          filter: "grayscale(0.35) sepia(0.25) hue-rotate(195deg) saturate(1.3) brightness(1.08) contrast(1.05)",
+          filter: "hue-rotate(210deg) saturate(1.5) brightness(1.2)",
         }}
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
-      />
-
-      {/* Blue tint overlay to blend warm tones into site palette */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "linear-gradient(135deg, rgba(37,99,235,0.18) 0%, rgba(56,189,248,0.08) 45%, transparent 70%)",
-          mixBlendMode: "overlay",
-        }}
       />
 
       {/* Soft vignette so edges melt into page bg #070b14 */}

@@ -36,26 +36,16 @@ export function AlbaniaNetworkMap() {
         alt="Albania and Kosovo digital risk network"
         className="relative w-full h-auto object-contain select-none mix-blend-screen"
         style={{
-          filter: "hue-rotate(210deg) saturate(1.5) brightness(1.2)",
+          filter: "hue-rotate(210deg) saturate(1.5) brightness(1.2) opacity(0.85)",
         }}
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
       />
 
-      {/* Soft vignette so edges melt into page bg #070b14 */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 70% at 50% 42%, transparent 40%, #070b14 90%)",
-          opacity: 0.75,
-        }}
-      />
-      <div className="absolute bottom-0 inset-x-0 h-[28%] bg-gradient-to-t from-[#070b14] via-[#070b14]/80 to-transparent pointer-events-none" />
-      <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#070b14] via-[#070b14]/70 to-transparent pointer-events-none" />
-      <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#070b14] to-transparent pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#070b14] to-transparent pointer-events-none" />
+      {/* Subtle edge fade so top/bottom don't feel cropped — no dark bg overlay */}
+      <div className="absolute bottom-0 inset-x-0 h-[15%] bg-gradient-to-t from-[#070b14]/60 to-transparent pointer-events-none" />
+      <div className="absolute top-0 inset-x-0 h-[15%] bg-gradient-to-b from-[#070b14]/40 to-transparent pointer-events-none" />
 
       {/* Interactive nodes — confined to the wireframe map area */}
       <div className="absolute inset-x-[10%] top-[8%] bottom-[34%]">

@@ -17,7 +17,7 @@ const nodes = [
 export function AlbaniaNetworkMap() {
   return (
     <motion.div
-      className="relative w-full max-w-[340px] sm:max-w-[380px] lg:max-w-[420px] mx-auto"
+      className="relative w-full max-w-[340px] sm:max-w-[380px] lg:max-w-[420px] mx-auto bg-[#070b14]"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.9, ease: "easeOut" }}
@@ -36,11 +36,20 @@ export function AlbaniaNetworkMap() {
         alt="Albania and Kosovo digital risk network"
         className="relative w-full h-auto object-contain select-none"
         style={{
-          filter: "saturate(1.05) contrast(1.02)",
+          filter: "grayscale(0.35) sepia(0.25) hue-rotate(195deg) saturate(1.3) brightness(1.08) contrast(1.05)",
         }}
         initial={{ opacity: 0, scale: 0.97 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.2, ease: "easeOut", delay: 0.1 }}
+      />
+
+      {/* Blue tint overlay to blend warm tones into site palette */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "linear-gradient(135deg, rgba(37,99,235,0.18) 0%, rgba(56,189,248,0.08) 45%, transparent 70%)",
+          mixBlendMode: "overlay",
+        }}
       />
 
       {/* Soft vignette so edges melt into page bg #070b14 */}

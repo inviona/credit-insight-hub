@@ -32,7 +32,7 @@ export function AlbaniaNetworkMap() {
       />
 
       <motion.img
-        src="/new-bg.png"
+        src="/albania-kosovo.png"
         alt="Albania and Kosovo digital risk network"
         className="relative w-full h-auto object-contain select-none"
         style={{

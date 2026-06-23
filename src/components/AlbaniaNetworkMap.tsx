@@ -17,7 +17,7 @@ const nodes = [
 export function AlbaniaNetworkMap() {
   return (
     <motion.div
-      className="relative w-full max-w-[340px] sm:max-w-[380px] lg:max-w-[420px] mx-auto bg-[#070b14]"
+      className="relative w-full max-w-[340px] sm:max-w-[380px] lg:max-w-[420px] mx-auto"
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.9, ease: "easeOut" }}
@@ -48,12 +48,14 @@ export function AlbaniaNetworkMap() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "radial-gradient(ellipse 85% 75% at 50% 38%, transparent 50%, #070b14 100%)",
-          opacity: 0.55,
+            "radial-gradient(ellipse 80% 70% at 50% 42%, transparent 40%, #070b14 90%)",
+          opacity: 0.75,
         }}
       />
       <div className="absolute bottom-0 inset-x-0 h-[28%] bg-gradient-to-t from-[#070b14] via-[#070b14]/80 to-transparent pointer-events-none" />
-      <div className="absolute top-0 inset-x-0 h-12 bg-gradient-to-b from-[#070b14]/40 to-transparent pointer-events-none" />
+      <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#070b14] via-[#070b14]/70 to-transparent pointer-events-none" />
+      <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-[#070b14] to-transparent pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-[#070b14] to-transparent pointer-events-none" />
 
       {/* Interactive nodes — confined to the wireframe map area */}
       <div className="absolute inset-x-[10%] top-[8%] bottom-[34%]">

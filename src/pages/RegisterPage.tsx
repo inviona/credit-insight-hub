@@ -74,7 +74,7 @@ export default function RegisterPage() {
               Back
             </Button>
             <CardTitle className="text-xl">Create Account</CardTitle>
-            <CardDescription>Join Credit Predictor</CardDescription>
+            <CardDescription>Join Credit Analyst</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

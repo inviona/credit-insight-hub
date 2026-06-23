@@ -23,7 +23,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <SidebarTrigger className="mr-3" />
-            <span className="text-sm text-muted-foreground">Credit Predictor</span>
+            <span className="text-sm text-muted-foreground">Credit Analyst</span>
           </header>
           <main className="flex-1 p-6">
             {children}

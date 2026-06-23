@@ -62,7 +62,7 @@ export default function LoginPage() {
               <Shield className="h-8 w-8 text-primary" />
             </div>
             <CardTitle className="text-xl">Sign In</CardTitle>
-            <CardDescription>Access Credit Predictor dashboard</CardDescription>
+            <CardDescription>Access Credit Analyst dashboard</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">

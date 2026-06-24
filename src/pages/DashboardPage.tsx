@@ -140,7 +140,7 @@ export default function DashboardPage() {
   const totalAssessments = applications.length;
   const approvedCount = applications.filter(a => getDecision(a.status) === "APPROVED").length;
   const approvalRate = totalAssessments ? Math.round((approvedCount / totalAssessments) * 100) : 0;
-  const highRiskCount = applications.filter(a => getDecision(a.status) === "REJECTED").length;
+  const highRiskCount = applications.filter(a => (a.status || "").toLowerCase() === "pending_review").length;
 
   const portfolioValue = useMemo(() => {
     const total = applications.reduce((sum, a) => sum + (a.loan_amount || 0), 0);
@@ -285,7 +285,7 @@ export default function DashboardPage() {
               analysis: `${highRiskCount} applications have been flagged for manual review due to elevated risk scores or policy exceptions.\n\nThese cases require human expertise to evaluate contextual factors not captured by automated models.`,
               chart: (
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dailyStats.slice(-14).map(d => ({ date: d.date, alerts: d.rejected }))}>
+                  <BarChart data={dailyStats.slice(-14).map(d => ({ date: d.date, alerts: d.pending }))}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
                     <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />

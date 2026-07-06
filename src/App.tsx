@@ -1,9 +1,10 @@
+import { useEffect, useRef } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AuthGuard } from "@/components/AuthGuard";
 import { ChatBot } from "@/components/ChatBot";
 import LandingPage from "./pages/LandingPage";
@@ -21,6 +22,21 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+function AuthCallbackRedirect() {
+  const { fromEmailVerification, user, loading } = useAuth();
+  const navigate = useNavigate();
+  const redirected = useRef(false);
+
+  useEffect(() => {
+    if (!loading && fromEmailVerification && user && !redirected.current) {
+      redirected.current = true;
+      navigate("/auth/callback", { replace: true });
+    }
+  }, [fromEmailVerification, user, loading, navigate]);
+
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -29,6 +45,7 @@ const App = () => (
       <ChatBot />
       <BrowserRouter>
         <AuthProvider>
+          <AuthCallbackRedirect />
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />

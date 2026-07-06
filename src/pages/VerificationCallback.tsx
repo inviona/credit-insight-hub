@@ -4,12 +4,27 @@ import { Shield, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { TopNavbar } from "@/components/TopNavbar";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function VerificationCallback() {
+  const { fromEmailVerification, user } = useAuth();
   const [status, setStatus] = useState<"verifying" | "success" | "error">("verifying");
 
   useEffect(() => {
-    const hashParams = new URLSearchParams(window.location.hash.replace("#", "?"));
+    const hash = window.location.hash;
+
+    if (user && (fromEmailVerification || hash.includes("access_token"))) {
+      setStatus("success");
+      window.history.replaceState(null, "", window.location.pathname);
+      return;
+    }
+
+    if (!hash) {
+      setStatus("success");
+      return;
+    }
+
+    const hashParams = new URLSearchParams(hash.replace("#", "?"));
     const type = hashParams.get("type");
     const error = hashParams.get("error");
 
@@ -22,12 +37,10 @@ export default function VerificationCallback() {
       setStatus("success");
       window.history.replaceState(null, "", window.location.pathname);
     } else {
-      const timer = setTimeout(() => {
-        setStatus("success");
-      }, 1500);
+      const timer = setTimeout(() => setStatus("success"), 1500);
       return () => clearTimeout(timer);
     }
-  }, []);
+  }, [user, fromEmailVerification]);
 
   return (
     <div className="min-h-screen bg-background">

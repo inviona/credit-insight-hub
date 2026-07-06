@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,12 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { TopNavbar } from "@/components/TopNavbar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -43,11 +51,7 @@ export default function RegisterPage() {
       }
 
       if (data.user) {
-        toast({
-          title: "Account created!",
-          description: "Please check your email to verify your account, then log in.",
-        });
-        navigate("/login");
+        setShowConfirmDialog(true);
       }
     } catch (error: unknown) {
       toast({
@@ -101,6 +105,27 @@ export default function RegisterPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="text-center space-y-3">
+            <div className="flex justify-center">
+              <div className="rounded-full bg-primary/10 p-3">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+            </div>
+            <DialogTitle className="text-xl">Account created!</DialogTitle>
+            <DialogDescription className="text-base">
+              Please check your email to confirm your account, then sign in.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-center pb-4">
+            <Button onClick={() => { setShowConfirmDialog(false); navigate("/login"); }}>
+              Got it
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

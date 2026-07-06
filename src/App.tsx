@@ -16,6 +16,7 @@ import HistoryPage from "./pages/HistoryPage";
 import ManualReviewPage from "./pages/ManualReviewPage";
 import PersonalPage from "./pages/PersonalPage";
 import ContactSalesPage from "./pages/ContactSalesPage";
+import VerificationCallback from "./pages/VerificationCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/auth/callback" element={<VerificationCallback />} />
             <Route path="/personal" element={<PersonalPage />} />
             <Route path="/contact-sales" element={<ContactSalesPage />} />
             <Route
